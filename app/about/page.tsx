@@ -51,6 +51,13 @@ export default function AboutPage() {
             </div>
 
             <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
+              <h2 className="text-2xl font-bold text-white sm:text-3xl">Our History</h2>
+              <p className="mt-4 leading-relaxed text-slate-300">
+                IFPHG was founded in 2016 — over 10 years of bringing Filipino and international pilots together in the Infinite Flight community.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
               <h2 className="text-2xl font-bold text-white sm:text-3xl">Our Fleets</h2>
               <p className="mt-4 leading-relaxed text-slate-300">
                 Infinite Flight: Philippine Fleet: Airbus A350-1000, Airbus A350-900, Airbus A321-200 Boeing 747-400, Boeing 777-300ER and MD-11 🇵🇭
@@ -146,6 +153,8 @@ export default function AboutPage() {
                   <p className="text-slate-300">Captain Andy Lugod</p>
                   <p className="text-slate-300">Captain Byron Balagtas</p>
                   <p className="text-slate-300">Captain Ron Bautista</p>
+                  <p className="text-slate-300">Captain Enrico Joshua</p>
+                  <p className="text-slate-300">Captain Precious Kaye</p>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-white">Callsign Manager</h3>
