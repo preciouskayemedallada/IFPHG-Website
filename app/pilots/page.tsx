@@ -129,7 +129,7 @@ export default function PilotsPage() {
           </div>
         )}
 
-        {session && (
+        {session?.user && (
           <>
             <div className="mb-6 flex items-center justify-between">
               <p className="text-sm text-slate-400">
