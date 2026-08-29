@@ -1,0 +1,25 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# testing
+coverage
+.nyc_output
+
+# next.js
+.next
+out
+dist
+
+# production
+build
+dist
+
+# misc
+.DS_Store
+*.log
+tmp
+
+# env
+.env*.local
