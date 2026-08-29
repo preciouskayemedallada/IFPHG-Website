@@ -7,21 +7,17 @@ export const authConfig = {
     {
       id: "infiniteflight",
       name: "Infinite Flight",
-      type: "oauth",
-      authorization: {
-        url: "https://api.infiniteflight.com/auth/v2/connect/authorize",
-        params: {
-          response_type: "code",
-          scope:
-            "openid profile offline_access live:organizations.read live:aircraft.read live:schedules.read",
-          redirect_uri: process.env.NEXTAUTH_URL + "/api/auth/callback/infiniteflight",
-        },
+      type: "credentials",
+      credentials: {
+        access_token: { label: "Access Token", type: "text" },
       },
-      token: "https://api.infiniteflight.com/auth/v2/connect/token",
-      userinfo: "https://api.infiniteflight.com/connect/userinfo",
-      clientId: process.env.IF_OAUTH_CLIENT_ID,
-      clientSecret: process.env.IF_OAUTH_CLIENT_SECRET,
-      profile(profile) {
+      async authorize(credentials) {
+        if (!credentials?.access_token) return null;
+        const res = await fetch("https://api.infiniteflight.com/connect/userinfo", {
+          headers: { Authorization: `Bearer ${credentials.access_token}` },
+        });
+        if (!res.ok) return null;
+        const profile = await res.json();
         return {
           id: profile.sub || profile.id,
           name: profile.name || profile.preferred_username,
@@ -42,9 +38,9 @@ export const authConfig = {
     },
     async session({ session, token }) {
       if (token) {
-        session.accessToken = token.accessToken as string;
-        session.refreshToken = token.refreshToken as string;
-        session.expiresAt = token.expiresAt as number;
+        session.accessToken = token.accessToken as string | undefined;
+        session.refreshToken = token.refreshToken as string | undefined;
+        session.expiresAt = token.expiresAt as number | undefined;
       }
       return session;
     },

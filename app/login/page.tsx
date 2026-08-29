@@ -1,6 +1,5 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { Plane } from "lucide-react";
 
 export default function LoginPage() {
@@ -15,13 +14,14 @@ export default function LoginPage() {
           Login with your Infinite Flight Community account to access the pilot
           roster and flight data.
         </p>
-        <button
-          type="button"
-          onClick={() => signIn("infiniteflight", { callbackUrl: "/pilots" })}
-          className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-primary-500 px-8 py-3.5 text-sm font-semibold text-white shadow-xl shadow-primary-500/25 transition-all duration-300 hover:bg-primary-600 hover:shadow-primary-500/40 focus:outline-none focus:ring-2 focus:ring-primary-500/60"
-        >
-          Login with Infinite Flight
-        </button>
+        <form action="/api/auth/ifc-login" method="GET">
+          <button
+            type="submit"
+            className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-primary-500 px-8 py-3.5 text-sm font-semibold text-white shadow-xl shadow-primary-500/25 transition-all duration-300 hover:bg-primary-600 hover:shadow-primary-500/40 focus:outline-none focus:ring-2 focus:ring-primary-500/60"
+          >
+            Login with Infinite Flight
+          </button>
+        </form>
       </div>
     </div>
   );

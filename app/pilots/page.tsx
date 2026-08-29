@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { Plane, Users, FileText } from "lucide-react";
 
 interface Pilot {
@@ -63,13 +63,14 @@ export default function PilotsPage() {
               Please log in with your Infinite Flight Community account to view
               the pilot roster and flight data.
             </p>
-            <button
-              type="button"
-              onClick={() => signIn("infiniteflight")}
-              className="mt-6 inline-flex items-center justify-center rounded-xl bg-primary-500 px-8 py-3.5 text-sm font-semibold text-white shadow-xl shadow-primary-500/25 transition-all duration-300 hover:bg-primary-600 hover:shadow-primary-500/40 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary-500/60"
-            >
-              Login with Infinite Flight
-            </button>
+            <form action="/api/auth/ifc-login" method="GET">
+              <button
+                type="submit"
+                className="mt-6 inline-flex items-center justify-center rounded-xl bg-primary-500 px-8 py-3.5 text-sm font-semibold text-white shadow-xl shadow-primary-500/25 transition-all duration-300 hover:bg-primary-600 hover:shadow-primary-500/40 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary-500/60"
+              >
+                Login with Infinite Flight
+              </button>
+            </form>
           </div>
         )}
 
