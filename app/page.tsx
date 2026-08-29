@@ -1,56 +1,5 @@
 import Link from "next/link";
-import {
-  Plane,
-  Users,
-  Cloud,
-  Clock,
-  ArrowRight,
-} from "lucide-react";
-import AircraftCard from "@/components/AircraftCard";
-
-const stats = [
-  {
-    label: "Aircraft",
-    value: "24",
-    icon: Plane,
-  },
-  {
-    label: "Active Pilots",
-    value: "87",
-    icon: Users,
-  },
-  {
-    label: "Total Flights",
-    value: "2,134",
-    icon: Cloud,
-  },
-  {
-    label: "Flight Hours",
-    value: "8,920",
-    icon: Clock,
-  },
-];
-
-const featuredFleet = [
-  {
-    registration: "RP-C001",
-    aircraftType: "Airbus A320-232",
-    status: "Available" as const,
-    callsign: "IFPHG-001",
-  },
-  {
-    registration: "RP-C002",
-    aircraftType: "Boeing 737-800",
-    status: "In Flight" as const,
-    callsign: "IFPHG-002",
-  },
-  {
-    registration: "RP-C003",
-    aircraftType: "Airbus A321neo",
-    status: "Available" as const,
-    callsign: "IFPHG-003",
-  },
-];
+import { ArrowRight } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -96,79 +45,6 @@ export default function HomePage() {
               className="inline-flex items-center justify-center rounded-xl border border-navy-600/80 bg-navy-800/40 px-8 py-3.5 text-sm font-semibold text-slate-200 backdrop-blur-sm transition-all duration-300 hover:border-navy-500 hover:bg-navy-800/60 hover:text-white hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary-500/60"
             >
               View Our Fleet
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="relative py-20">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-700/60 to-transparent" />
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="mb-14 text-center">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
-              By the Numbers
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-slate-400">
-              Join our growing community of dedicated virtual aviators.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {stats.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <div
-                  key={stat.label}
-                  className="group relative flex flex-col items-center gap-4 rounded-2xl border border-navy-700/60 bg-navy-800/40 p-6 backdrop-blur-sm transition-all duration-300 hover:scale-[1.03] hover:border-navy-600/80 hover:bg-navy-800/60 hover:shadow-xl hover:shadow-navy-900/20"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-500/10 ring-1 ring-primary-500/20 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary-500/15">
-                    <Icon className="h-5 w-5 text-primary-400" />
-                  </div>
-                  <p className="text-3xl font-bold text-white">{stat.value}</p>
-                  <p className="text-sm font-medium text-slate-400">{stat.label}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Fleet Section */}
-      <section className="relative py-20">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-700/60 to-transparent" />
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="mb-10 flex items-end justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">
-                Featured Fleet
-              </h2>
-              <p className="mt-2 max-w-xl text-slate-400">
-                A glimpse into our modern and diverse fleet of aircraft.
-              </p>
-            </div>
-            <Link
-              href="/fleet"
-              className="group hidden items-center gap-1.5 text-sm font-medium text-primary-400 transition-colors hover:text-primary-300 sm:flex"
-            >
-              View all aircraft
-              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {featuredFleet.map((aircraft) => (
-              <AircraftCard key={aircraft.registration} {...aircraft} />
-            ))}
-          </div>
-
-          <div className="mt-8 text-center sm:hidden">
-            <Link
-              href="/fleet"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-400 transition-colors hover:text-primary-300"
-            >
-              View all aircraft
-              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -277,5 +153,3 @@ export default function HomePage() {
     </>
   );
 }
-< ! - -   r e d e p l o y   - - >  
- 
