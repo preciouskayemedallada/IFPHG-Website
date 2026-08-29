@@ -1,4 +1,4 @@
-import { randomBytes, createHmac } from "crypto";
+import { randomBytes, createHash } from "crypto";
 import { NextResponse } from "next/server";
 
 function base64url(input: Buffer) {
@@ -7,7 +7,7 @@ function base64url(input: Buffer) {
 
 export async function GET() {
   const codeVerifier = base64url(randomBytes(32));
-  const codeChallenge = base64url(createHmac("sha256", codeVerifier).digest());
+  const codeChallenge = base64url(createHash("sha256").update(codeVerifier).digest());
 
   const clientId = process.env.IF_OAUTH_CLIENT_ID;
   const redirectUri = `${process.env.NEXTAUTH_URL}/api/auth/ifc-callback`;
@@ -28,15 +28,15 @@ export async function GET() {
   const response = NextResponse.redirect(url);
   response.cookies.set("ifc_oauth_state", state, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true,
+    sameSite: "none",
     maxAge: 600,
     path: "/",
   });
   response.cookies.set("ifc_code_verifier", codeVerifier, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true,
+    sameSite: "none",
     maxAge: 600,
     path: "/",
   });

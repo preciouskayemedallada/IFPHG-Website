@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { signIn } from "@/auth/config";
 
 export async function GET(request: Request) {
@@ -10,15 +11,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/login?error=missing_code", request.url));
   }
 
-  const cookieHeader = request.headers.get("cookie") || "";
-  const storedState = cookieHeader
-    .split("; ")
-    .find((c) => c.startsWith("ifc_oauth_state="))
-    ?.split("=")[1];
-  const codeVerifier = cookieHeader
-    .split("; ")
-    .find((c) => c.startsWith("ifc_code_verifier="))
-    ?.split("=")[1];
+  const cookieStore = await cookies();
+  const storedState = cookieStore.get("ifc_oauth_state")?.value;
+  const codeVerifier = cookieStore.get("ifc_code_verifier")?.value;
 
   if (!state || state !== storedState) {
     return NextResponse.redirect(new URL("/login?error=invalid_state", request.url));
@@ -31,14 +26,14 @@ export async function GET(request: Request) {
   const tokenRes = await fetch("https://api.infiniteflight.com/auth/v2/connect/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: process.env.IF_OAUTH_CLIENT_ID || "",
-        client_secret: process.env.IF_OAUTH_CLIENT_SECRET || "",
-        code,
-        redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/ifc-callback`,
-        code_verifier: codeVerifier,
-      }),
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: process.env.IF_OAUTH_CLIENT_ID || "",
+      client_secret: process.env.IF_OAUTH_CLIENT_SECRET || "",
+      code,
+      redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/ifc-callback`,
+      code_verifier: codeVerifier,
+    }),
   });
 
   if (!tokenRes.ok) {
@@ -63,15 +58,15 @@ export async function GET(request: Request) {
   const response = NextResponse.redirect(new URL(redirectTo, request.url));
   response.cookies.set("ifc_oauth_state", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true,
+    sameSite: "none",
     maxAge: 0,
     path: "/",
   });
   response.cookies.set("ifc_code_verifier", "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true,
+    sameSite: "none",
     maxAge: 0,
     path: "/",
   });
