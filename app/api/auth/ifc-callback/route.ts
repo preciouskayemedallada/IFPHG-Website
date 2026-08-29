@@ -1,6 +1,29 @@
+import { randomBytes, createHash, createHmac } from "crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { signIn } from "@/auth/config";
+
+function base64url(input: Buffer) {
+  return input.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    return JSON.parse(Buffer.from(parts[1], "base64url").toString());
+  } catch {
+    return null;
+  }
+}
+
+function createSessionJwt(payload: Record<string, unknown>, secret: string): string {
+  const header = base64url(Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })));
+  const body = base64url(Buffer.from(JSON.stringify(payload)));
+  const signature = base64url(
+    createHmac("sha256", secret).update(`${header}.${body}`).digest()
+  );
+  return `${header}.${body}.${signature}`;
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -43,22 +66,39 @@ export async function GET(request: Request) {
   }
 
   const tokens = await tokenRes.json();
+  const payload = decodeJwtPayload(tokens.access_token) || {};
+  const now = Math.floor(Date.now() / 1000);
 
-  const res = await signIn("infiniteflight", {
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    expires_at: tokens.expires_at,
-    redirect: false,
-  });
+  const sessionPayload = {
+    name: (payload.name as string) || (payload.preferred_username as string) || "",
+    email: (payload.email as string) || "",
+    picture: (payload.picture as string) || "",
+    sub: (payload.sub as string) || (payload.id as string) || "",
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    expiresAt: tokens.expires_at ? Number(tokens.expires_at) : now + 1800,
+    iat: now,
+    exp: now + 30 * 24 * 60 * 60,
+  };
 
-  if (res?.error) {
-    console.error("NextAuth signIn failed", res.error);
-    return NextResponse.redirect(new URL("/login?error=signin_failed", process.env.NEXTAUTH_URL || request.url));
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    console.error("NEXTAUTH_SECRET is not configured");
+    return NextResponse.redirect(new URL("/login?error=server_error", process.env.NEXTAUTH_URL || request.url));
   }
 
+  const sessionToken = createSessionJwt(sessionPayload, secret);
   const redirectTo = url.searchParams.get("callbackUrl") || "/pilots";
-  const baseUrl = process.env.NEXTAUTH_URL || request.url;
-  const response = NextResponse.redirect(new URL(redirectTo, baseUrl));
+  const response = NextResponse.redirect(new URL(redirectTo, process.env.NEXTAUTH_URL || request.url));
+
+  response.cookies.set("next-auth.session-token", sessionToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    maxAge: 30 * 24 * 60 * 60,
+    path: "/",
+  });
+
   response.cookies.set("ifc_oauth_state", "", {
     httpOnly: true,
     secure: true,

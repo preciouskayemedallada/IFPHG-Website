@@ -13,6 +13,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 
 export const authConfig = {
   trustHost: true,
+  session: { strategy: "jwt" },
   providers: [
     {
       id: "infiniteflight",
