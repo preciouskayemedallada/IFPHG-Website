@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const response = NextResponse.redirect(new URL("/", process.env.NEXTAUTH_URL || ""));
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const response = NextResponse.redirect(new URL("/", baseUrl));
   
   response.cookies.set("ifphg_session", "", {
     httpOnly: true,
@@ -71,7 +72,8 @@ export async function GET() {
 }
 
 export async function POST() {
-  const response = NextResponse.redirect(new URL("/", process.env.NEXTAUTH_URL || ""));
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const response = NextResponse.redirect(new URL("/", baseUrl));
   
   response.cookies.set("ifphg_session", "", {
     httpOnly: true,

@@ -59,7 +59,6 @@ export async function GET(request: Request) {
 
   if (!tokenRes.ok) {
     const text = await tokenRes.text();
-    console.error("IFC token exchange failed", tokenRes.status, text);
     return NextResponse.redirect(new URL("/login?error=token_exchange_failed", process.env.NEXTAUTH_URL || request.url));
   }
 
@@ -81,12 +80,12 @@ export async function GET(request: Request) {
 
   const secret = process.env.NEXTAUTH_SECRET;
   if (!secret) {
-    console.error("NEXTAUTH_SECRET is not configured");
     return NextResponse.redirect(new URL("/login?error=server_error", process.env.NEXTAUTH_URL || request.url));
   }
 
   const sessionToken = createSessionJwt(sessionPayload, secret);
-  const redirectTo = url.searchParams.get("callbackUrl") || "/pilots";
+  const rawRedirectTo = url.searchParams.get("callbackUrl") || "/pilots";
+  const redirectTo = rawRedirectTo.startsWith("/") ? rawRedirectTo : "/pilots";
   const response = NextResponse.redirect(new URL(redirectTo, process.env.NEXTAUTH_URL || request.url));
 
   response.cookies.set("ifphg_session", sessionToken, {
