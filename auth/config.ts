@@ -14,6 +14,7 @@ export const authConfig = {
           response_type: "code",
           scope:
             "openid profile offline_access live:organizations.read live:aircraft.read live:schedules.read",
+          redirect_uri: process.env.NEXTAUTH_URL + "/api/auth/callback/infiniteflight",
         },
       },
       token: "https://api.infiniteflight.com/auth/v2/connect/token",
