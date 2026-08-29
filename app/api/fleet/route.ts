@@ -209,7 +209,7 @@ async function fetchWithAuth(url: string, token: string): Promise<Response> {
 
 export async function GET() {
   try {
-    const token = process.env["IF_BEARER"];
+    const token = process.env.IF_ACCESS_TOKEN;
     if (!token) {
       console.error("IF_ACCESS_TOKEN is not configured");
       return NextResponse.json(

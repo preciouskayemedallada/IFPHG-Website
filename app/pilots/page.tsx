@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSession, signIn } from "next-auth/react";
 import { Plane, Users, FileText } from "lucide-react";
 
 interface Pilot {
@@ -23,17 +23,18 @@ interface Pirep {
 }
 
 const pilots: Pilot[] = [];
-
 const pireps: Pirep[] = [];
 
 export default function PilotsPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(true);
+  const { data: session, status } = useSession();
 
-  const handleLogin = () => {
-    setShowLoginPrompt(false);
-    setIsLoggedIn(true);
-  };
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-slate-400">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen py-12">
@@ -52,7 +53,7 @@ export default function PilotsPage() {
           </p>
         </div>
 
-        {showLoginPrompt && (
+        {!session && (
           <div className="mb-10 rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 text-center backdrop-blur-sm md:p-12">
             <Plane className="mx-auto h-12 w-12 text-primary-400" />
             <h2 className="mt-4 text-2xl font-bold text-white">
@@ -64,7 +65,7 @@ export default function PilotsPage() {
             </p>
             <button
               type="button"
-              onClick={handleLogin}
+              onClick={() => signIn("infiniteflight")}
               className="mt-6 inline-flex items-center justify-center rounded-xl bg-primary-500 px-8 py-3.5 text-sm font-semibold text-white shadow-xl shadow-primary-500/25 transition-all duration-300 hover:bg-primary-600 hover:shadow-primary-500/40 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-primary-500/60"
             >
               Login with Infinite Flight
@@ -72,8 +73,14 @@ export default function PilotsPage() {
           </div>
         )}
 
-        {isLoggedIn && (
+        {session && (
           <>
+            <div className="mb-6 flex items-center justify-between">
+              <p className="text-sm text-slate-400">
+                Welcome, <span className="font-semibold text-white">{session.user?.name}</span>
+              </p>
+            </div>
+
             {/* Search / Filter Bar (visual only) */}
             <div className="mb-10 relative">
               <input
@@ -163,7 +170,12 @@ export default function PilotsPage() {
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className="text-sm font-semibold text-white">
-                            {pirep.pilot} {pirep.callsign && <span className="text-primary-400">{pirep.callsign}</span>}
+                            {pirep.pilot}{" "}
+                            {pirep.callsign && (
+                              <span className="text-primary-400">
+                                {pirep.callsign}
+                              </span>
+                            )}
                           </p>
                           <p className="mt-1 text-sm text-slate-300">
                             {pirep.route} · {pirep.aircraft}

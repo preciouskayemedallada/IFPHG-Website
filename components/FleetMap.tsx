@@ -55,7 +55,37 @@ function FitBounds({ aircraft }: { aircraft: FleetAircraft[] }) {
   return null;
 }
 
-function CenterButton({ aircraft }: { aircraft: FleetAircraft[] }) {
+function FlightPlanLine({ waypoints, color }: { waypoints: { lat: number; lon: number }[]; color: string }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || waypoints.length < 2) return;
+
+    const maxPoints = 50;
+    const step = Math.max(1, Math.floor(waypoints.length / maxPoints));
+    const sampled = waypoints.filter((_, idx) => idx % step === 0 || idx === waypoints.length - 1);
+    const latLngs = sampled.map((w) => [w.lat, w.lon] as L.LatLngExpression);
+
+    const polyline = L.polyline(latLngs, {
+      color: color || "#3B82F6",
+      weight: 4,
+      opacity: 0.9,
+      dashArray: "10, 8",
+      lineCap: "round",
+      lineJoin: "round",
+    });
+
+    polyline.addTo(map);
+
+    return () => {
+      map.removeLayer(polyline);
+    };
+  }, [map, waypoints, color]);
+
+  return null;
+}
+
+function CenterButton({ aircraft, onSelect }: { aircraft: FleetAircraft[]; onSelect: (id: string | null) => void }) {
   const map = useMap();
 
   const handleClick = () => {
@@ -68,6 +98,7 @@ function CenterButton({ aircraft }: { aircraft: FleetAircraft[] }) {
     if (positions.length > 0) {
       map.fitBounds(L.latLngBounds(positions), { padding: [40, 40], maxZoom: 12 });
     }
+    onSelect(null);
   };
 
   return (
@@ -82,8 +113,23 @@ function CenterButton({ aircraft }: { aircraft: FleetAircraft[] }) {
   );
 }
 
+function MapClickHandler({ onSelect }: { onSelect: (id: string | null) => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const handler = () => onSelect(null);
+    map.on("click", handler);
+    return () => {
+      map.off("click", handler);
+    };
+  }, [map, onSelect]);
+
+  return null;
+}
+
 export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
   const [mounted, setMounted] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const hasPositions = useMemo(
     () => aircraft.some((ac) => ac.location && ac.location.lat != null && ac.location.lon != null),
     [aircraft]
@@ -118,6 +164,16 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
       </div>
     );
   }
+
+  const handleMarkerClick = (id: string) => {
+    setSelectedId(id);
+  };
+
+  const handleMapClick = () => {
+    setSelectedId(null);
+  };
+
+  const selectedAircraft = aircraft.find((ac) => ac.id === selectedId);
 
   return (
     <div>
@@ -168,7 +224,14 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           />
           <FitBounds aircraft={aircraft} />
-          <CenterButton aircraft={aircraft} />
+          <CenterButton aircraft={aircraft} onSelect={handleMapClick} />
+          <MapClickHandler onSelect={handleMapClick} />
+          {selectedAircraft && selectedAircraft.flightPlanWaypoints.length >= 2 && (
+            <FlightPlanLine
+              waypoints={selectedAircraft.flightPlanWaypoints}
+              color={statusColors[selectedAircraft.aircraftState] || "#3B82F6"}
+            />
+          )}
           {aircraft
             .filter((ac): ac is FleetAircraft & { location: { lat: number; lon: number } } => !!ac.location && ac.location.lat != null && ac.location.lon != null)
             .map((ac) => {
@@ -180,7 +243,14 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
                 popupAnchor: [0, -14],
               });
               return (
-                <Marker key={ac.id} position={[ac.location.lat, ac.location.lon]} icon={customIcon}>
+                <Marker
+                  key={ac.id}
+                  position={[ac.location.lat, ac.location.lon]}
+                  icon={customIcon}
+                  eventHandlers={{
+                    click: () => handleMarkerClick(ac.id),
+                  }}
+                >
                   <Popup>
                     <div className="max-w-[260px] rounded-lg bg-navy-900 p-3 text-slate-200">
                       <div className="mb-2 flex items-center justify-between gap-2">
@@ -201,6 +271,14 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
                           <div className="flex justify-between">
                             <span className="text-slate-400">Pilot</span>
                             <span className="font-medium">{ac.currentPilot}</span>
+                          </div>
+                        )}
+                        {ac.flightPlan && (ac.flightPlan.from || ac.flightPlan.to) && (
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Flight Plan</span>
+                            <span className="font-medium">
+                              {ac.flightPlan.from || "???"} → {ac.flightPlan.to || "???"}
+                            </span>
                           </div>
                         )}
                         {ac.lastUpdate && (

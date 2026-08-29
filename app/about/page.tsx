@@ -1,4 +1,27 @@
-import { Plane, Users, MessageCircle } from "lucide-react";
+import { Plane, Shield, Users, Award } from "lucide-react";
+
+const leadership = [
+  {
+    position: "Chief Executive Officer",
+    name: "Captain Miguel Santos",
+    initials: "MS",
+  },
+  {
+    position: "Chief Operations Officer",
+    name: "First Officer Ana Reyes",
+    initials: "AR",
+  },
+  {
+    position: "Chief Training Officer",
+    name: "Captain David Cruz",
+    initials: "DC",
+  },
+  {
+    position: "Community Director",
+    name: "First Officer Maria Lim",
+    initials: "ML",
+  },
+];
 
 export default function AboutPage() {
   return (
@@ -21,180 +44,148 @@ export default function AboutPage() {
             About IFPHG
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-slate-300">
-            Welcome to the official group of Filipino and International Pilots of Infinite Flight.
+            The premier virtual aviation organization representing the Philippines
+            in the global flight simulation community.
           </p>
         </div>
       </section>
 
-      {/* About Content */}
+      {/* Mission Statement */}
       <section className="relative py-20">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-700/60 to-transparent" />
         <div className="container mx-auto px-4 md:px-6">
-          <div className="mx-auto max-w-4xl space-y-12">
-            <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-accent-500/5" />
-              <div className="relative">
-                <h2 className="text-2xl font-bold text-white sm:text-3xl">Welcome to IFPHG</h2>
-                <p className="mt-4 leading-relaxed text-slate-300">
-                  Welcome new members to the official group of Filipino and International Pilots of Infinite Flight.
-                  For all players of Infinite Flight gamers from the Philippines or the world!
-                </p>
-                <p className="mt-4 leading-relaxed text-slate-300">
-                  Share your own experience about flying Boeings or Airbus and screenshots and videos of all your Infinite Flight experience.
-                  Please do not post anything that is not Infinite Flight related. Those who will violate the rules will be removed from the group.
-                  We welcome your suggestions and ideas.
-                </p>
-                <p className="mt-4 leading-relaxed text-slate-300">
-                  We also have our very own Messenger groups for Off Topic and Unicom chats.
-                </p>
+          <div className="relative overflow-hidden rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-accent-500/5" />
+            <div className="relative">
+              <h2 className="text-2xl font-bold text-white sm:text-3xl">Our Mission</h2>
+              <p className="mt-4 leading-relaxed text-slate-300">
+                IF Philippines Group (IFPHG) is dedicated to providing the highest
+                quality virtual aviation experience for flight simulator enthusiasts.
+                We strive to foster a professional, supportive, and inclusive
+                community where pilots of all skill levels can develop their
+                knowledge, refine their skills, and enjoy the art of flight.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Values */}
+      <section className="relative py-20">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-700/60 to-transparent" />
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="mb-14 text-center">
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">Our Values</h2>
+            <p className="mx-auto mt-3 max-w-xl text-slate-400">
+              These core principles guide everything we do as an organization.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                icon: Shield,
+                title: "Professionalism",
+                description:
+                  "Upholding the highest standards of conduct, realism, and operational excellence in every aspect of our activities.",
+              },
+              {
+                icon: Users,
+                title: "Community",
+                description:
+                  "Building a supportive, welcoming, and inclusive environment where every member feels valued and encouraged to grow.",
+              },
+              {
+                icon: Award,
+                title: "Excellence",
+                description:
+                  "Continuously improving our standards, training programs, and fleet to deliver an exceptional virtual aviation experience.",
+              },
+            ].map((value) => (
+              <div
+                key={value.title}
+                className="group relative flex flex-col items-center rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 text-center backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:border-navy-600/80 hover:bg-navy-800/60 hover:shadow-xl hover:shadow-navy-900/30"
+              >
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-600/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-500/10 ring-1 ring-primary-500/20 transition-all duration-300 group-hover:scale-110">
+                  <value.icon className="h-6 w-6 text-primary-400" />
+                </div>
+                <h3 className="mb-3 text-xl font-bold text-white">{value.title}</h3>
+                <p className="text-sm leading-relaxed text-slate-400">{value.description}</p>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">Our History</h2>
-              <p className="mt-4 leading-relaxed text-slate-300">
-                IFPHG was founded in 2016 — over 10 years of bringing Filipino and international pilots together in the Infinite Flight community.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">Our Fleets</h2>
-              <p className="mt-4 leading-relaxed text-slate-300">
-                Infinite Flight: Philippine Fleet: Airbus A350-1000, Airbus A350-900, Airbus A321-200 Boeing 747-400, Boeing 777-300ER and MD-11 🇵🇭
-              </p>
-              <p className="mt-2 leading-relaxed text-slate-300">
-                PAL Express: Dash 8 Q-400🇵🇭
-              </p>
-              <p className="mt-2 leading-relaxed text-slate-300">
-                Cebu Pacific Fleet: Airbus A319 and A321-200
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">Reminders</h2>
-              <ul className="mt-4 list-disc space-y-2 pl-5 text-slate-300">
-                <li>WE FLY</li>
-                <li>WE TALK</li>
-                <li>WE TEACH</li>
-                <li>WE CONQUER</li>
-                <li>WE HAVE FUN</li>
-                <li>WE ARE A TEAM</li>
-                <li>WE ARE FILIPINOS</li>
-                <li>WE RESPECT EACH OTHER</li>
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">Rules</h2>
-              <ul className="mt-4 list-disc space-y-2 pl-5 text-slate-300">
-                <li>RACISM, SEXISM OR ANY DISRESPECTFUL COMMENTS IS NOT TOLERATED.</li>
-                <li>ONE OFFICIAL FACEBOOK ACCOUNT ONLY.</li>
-                <li>NO INTRODUCING ABOUT DOWNLOADING THE APP ILLEGALLY.</li>
-                <li>NO PIRACY.</li>
-                <li>NO TRASHTALK.</li>
-                <li>NO PORN TOPICS</li>
-                <li>NO POSTING VID/PIC IF IT IS NOT RELATED ABOUT THE GAME.</li>
-                <li>CHANGE YOUR DISPLAY NAME INTO IFPHG THEN YOUR NAME.</li>
-                <li>COOPERATE ON EVERY DISCUSSIONS.</li>
-                <li>ENGLISH/TAGALOG LANGUAGE ONLY.</li>
-                <li>PEOPLE WHO WILL USE FOUL WORDS WILL BE BANNED FOR ONE WEEK.</li>
-                <li>NONSENSICAL POSTS WILL BE DELETED.</li>
-                <li>PAPA ROMEO (PR) WILL BE THE PROPER CALLSIGN.</li>
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">Group Chats</h2>
-              <ul className="mt-4 list-disc space-y-2 pl-5 text-slate-300">
-                <li>IFPHG - UNICOM</li>
-                <li>IFPHG - OFF TOPIC</li>
-                <li>IFPHG - Elite Group Chat</li>
-                <li>IFPHG INTL UNICOM (For our int'l and local members) (English only)</li>
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">Social Media</h2>
-              <p className="mt-4 leading-relaxed text-slate-300">
-                Twitter: @IFPHGOfficial
-              </p>
-              <p className="mt-2 leading-relaxed text-slate-300">
-                Instagram: @ifphgofficial
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 backdrop-blur-sm md:p-12">
-              <h2 className="text-2xl font-bold text-white sm:text-3xl">Group Staffs</h2>
-              <div className="mt-6 grid gap-8 md:grid-cols-2">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Founder of IFPHG / Social Media Director</h3>
-                  <p className="text-slate-300">Captain Nuel Usher</p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Admins</h3>
-                  <p className="text-slate-300">Captain Zypheir Roland Garcia (Retired)</p>
-                  <p className="text-slate-300">Captain Jonas Macapagal (Retired)</p>
-                  <p className="text-slate-300">Captain RV Terrenal (Retired)</p>
-                  <p className="text-slate-300">Captain Daniel Jacob (Retired)</p>
-                  <p className="text-slate-300">Captain Mohamed Zimnaan</p>
-                  <p className="text-slate-300">Captain Yshy Sierra (Retired)</p>
-                  <p className="text-slate-300">Captain Ken Pasaporte (Retired)</p>
-                  <p className="text-slate-300">Captain Klive Feliciano (Retired)</p>
-                  <p className="text-slate-300">Captain John Peter Lo</p>
-                  <p className="text-slate-300">Captain Jean Carl Kenneth Li</p>
-                  <p className="text-slate-300">Captain Rafael Reyes</p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">FB Moderators</h3>
-                  <p className="text-slate-300">Captain Raynear Monteverde</p>
-                  <p className="text-slate-300">Captain John Anthony Cafe</p>
-                  <p className="text-slate-300">Captain Karlo Angelo Soriano</p>
-                  <p className="text-slate-300">Captain Luis Bugtong</p>
-                  <p className="text-slate-300">Captain Andy Lugod</p>
-                  <p className="text-slate-300">Captain Byron Balagtas</p>
-                  <p className="text-slate-300">Captain Ron Bautista</p>
-                  <p className="text-slate-300">Captain Enrico Joshua</p>
-                  <p className="text-slate-300">Captain Precious Kaye</p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Callsign Manager</h3>
-                  <p className="text-slate-300">Captain Rafael Reyes</p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Recruitment Team</h3>
-                  <p className="text-slate-300">Captain John Anthony Cafe</p>
-                  <p className="text-slate-300">Captain Raynear Monteverde</p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Event Moderators</h3>
-                  <p className="text-slate-300">Captain John Peter Lo</p>
-                  <p className="text-slate-300">Captain Rafael Reyes Yebra</p>
-                  <p className="text-slate-300">Captain Schaeffer Lewis</p>
-                  <p className="text-slate-300">Captain Jean Carl Kenneth</p>
-                  <p className="text-slate-300">Captain Raynear Monteverde</p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Website Creator</h3>
-                  <p className="text-slate-300">Captain RV Terrenal</p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">IFPHG - PAF</h3>
-                  <p className="text-slate-300">Capt. Jonas Macapagal</p>
-                  <p className="text-slate-300">Capt. Luis Bugtong</p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Special Adviser of IFPHG</h3>
-                  <p className="text-slate-300">Captain Erwin Tejano PR001</p>
-                </div>
+      {/* History */}
+      <section className="relative py-20">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-700/60 to-transparent" />
+        <div className="container mx-auto px-4 md:px-6">
+          <h2 className="mb-10 text-3xl font-bold text-white sm:text-4xl">Our History</h2>
+          <div className="relative border-l border-navy-700/60 pl-8 md:pl-10">
+            {[
+              {
+                date: "August 2020",
+                title: "Founding",
+                description:
+                  "IFPHG was founded by a group of passionate Filipino flight simulator enthusiasts with a shared vision of creating a professional virtual airline.",
+              },
+              {
+                date: "March 2021",
+                title: "First Fleet Expansion",
+                description:
+                  "Added our first Airbus A320 family aircraft and Boeing 737, establishing our core fleet for domestic and international routes.",
+              },
+              {
+                date: "September 2022",
+                title: "Training Program Launch",
+                description:
+                  "Launched our structured pilot training program, graduating over 100 cadets in the first year.",
+              },
+              {
+                date: "January 2024",
+                title: "International Recognition",
+                description:
+                  "Gained recognition from major virtual aviation networks and expanded our presence in the global community.",
+              },
+            ].map((item, idx) => (
+              <div key={idx} className="relative mb-10 md:mb-12 last:mb-0">
+                <div className="absolute -left-[2.35rem] top-1 h-3 w-3 rounded-full bg-primary-500 ring-4 ring-navy-900" />
+                <p className="text-sm font-semibold text-primary-400">{item.date}</p>
+                <h3 className="mt-1 text-xl font-bold text-white">{item.title}</h3>
+                <p className="mt-2 text-slate-300">{item.description}</p>
               </div>
-            </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div className="rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 text-center backdrop-blur-sm md:p-12">
-              <p className="text-lg font-semibold text-white">"Pilots take no special joy in walking, pilots like flying."</p>
-              <p className="mt-4 text-slate-300">Visit our Instagram Account @ifphgoffficial</p>
-              <p className="mt-2 text-2xl">✈️🇵🇭 Pilipinas/Philippines 🇵🇭✈️</p>
-              <p className="mt-2 text-xl font-bold text-primary-400">🇵🇭 It's more fun in IFPHG 🇵🇭</p>
-            </div>
+      {/* Leadership */}
+      <section className="relative py-20">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-700/60 to-transparent" />
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="mb-12 text-center">
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">Leadership</h2>
+            <p className="mx-auto mt-3 max-w-xl text-slate-400">
+              Our dedicated leadership team brings years of experience and passion to the organization.
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {leadership.map((leader) => (
+              <div
+                key={leader.position}
+                className="group relative flex flex-col items-center rounded-2xl border border-navy-700/60 bg-navy-800/40 p-6 text-center backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:border-navy-600/80 hover:bg-navy-800/60 hover:shadow-xl hover:shadow-navy-900/30"
+              >
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-600/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border-2 border-navy-600 bg-navy-700/40 text-lg font-bold text-primary-400 ring-4 ring-navy-800/60 transition-all duration-300 group-hover:border-navy-500">
+                  {leader.initials}
+                </div>
+                <p className="text-sm font-medium text-slate-400">{leader.position}</p>
+                <p className="mt-1 font-bold text-white">{leader.name}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -138,7 +138,7 @@ export default function JoinPage() {
                 support and updates.
               </p>
               <Link
-                href="https://discord.gg/wFzdaNRRyw"
+                href="https://discord.gg/ifphg"
                 className="mt-8 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-8 py-3.5 text-sm font-semibold text-white shadow-xl shadow-indigo-600/25 transition-all duration-300 hover:bg-indigo-700 hover:shadow-indigo-600/40 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/60"
               >
                 Join Discord
@@ -187,7 +187,7 @@ export default function JoinPage() {
               </p>
               <div className="mt-8">
                 <Link
-                  href="https://discord.gg/wFzdaNRRyw"
+                  href="https://discord.gg/ifphg"
                   className="group inline-flex items-center justify-center rounded-xl bg-accent-500 px-10 py-4 text-sm font-bold text-navy-900 shadow-xl shadow-accent-500/25 transition-all duration-300 hover:bg-accent-400 hover:shadow-accent-500/40 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-accent-500/60"
                 >
                   Begin Your Application
