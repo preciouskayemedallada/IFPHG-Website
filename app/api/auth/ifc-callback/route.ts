@@ -55,25 +55,28 @@ export async function GET(request: Request) {
   const payload = decodeJwtPayload(tokens.access_token) || {};
   const now = Math.floor(Date.now() / 1000);
 
-  const form = new FormData();
-  form.set("access_token", tokens.access_token);
-  form.set("refresh_token", tokens.refresh_token || "");
-  form.set("expires_at", String(tokens.expires_at || now + 1800));
-  form.set("callbackUrl", url.searchParams.get("callbackUrl") || "/pilots");
+  const name = (payload.name as string) || (payload.preferred_username as string) || "";
+  const email = (payload.email as string) || "";
+  const picture = (payload.picture as string) || "";
+  const userId = (payload.sub as string) || (payload.id as string) || "";
+  const callbackUrl = url.searchParams.get("callbackUrl") || "/pilots";
 
-  const signInRes = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/signin/credentials?callbackUrl=${encodeURIComponent(url.searchParams.get("callbackUrl") || "/pilots")}`, {
-    method: "POST",
-    body: form,
-    redirect: "manual",
+  const html = `<!DOCTYPE html>
+<html>
+<body>
+  <form id="form" action="${process.env.NEXTAUTH_URL}/api/auth/signin/credentials" method="POST">
+    <input type="hidden" name="access_token" value="${escapeHtml(tokens.access_token)}" />
+    <input type="hidden" name="refresh_token" value="${escapeHtml(tokens.refresh_token || "")}" />
+    <input type="hidden" name="expires_at" value="${tokens.expires_at || now + 1800}" />
+    <input type="hidden" name="callbackUrl" value="${escapeHtml(callbackUrl)}" />
+  </form>
+  <script>document.getElementById('form').submit();</script>
+</body>
+</html>`;
+
+  const response = new NextResponse(html, {
+    headers: { "content-type": "text/html" },
   });
-
-  if (!signInRes.ok) {
-    console.error("NextAuth signin failed", signInRes.status);
-    return NextResponse.redirect(new URL("/login?error=signin_failed", process.env.NEXTAUTH_URL || request.url));
-  }
-
-  const redirectTo = signInRes.headers.get("location") || url.searchParams.get("callbackUrl") || "/pilots";
-  const response = NextResponse.redirect(new URL(redirectTo, process.env.NEXTAUTH_URL || request.url));
 
   response.cookies.set("ifc_oauth_state", "", {
     httpOnly: true,
@@ -91,4 +94,12 @@ export async function GET(request: Request) {
   });
 
   return response;
+}
+
+function escapeHtml(str: string) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
