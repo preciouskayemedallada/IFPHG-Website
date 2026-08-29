@@ -1,34 +1,5 @@
 import Link from "next/link";
-import {
-  Plane,
-  Users,
-  Cloud,
-  Clock,
-  ArrowRight,
-} from "lucide-react";
-
-const stats = [
-  {
-    label: "Aircraft",
-    value: "24",
-    icon: Plane,
-  },
-  {
-    label: "Active Pilots",
-    value: "87",
-    icon: Users,
-  },
-  {
-    label: "Total Flights",
-    value: "2,134",
-    icon: Cloud,
-  },
-  {
-    label: "Flight Hours",
-    value: "8,920",
-    icon: Clock,
-  },
-];
+import { ArrowRight } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -75,39 +46,6 @@ export default function HomePage() {
             >
               View Our Fleet
             </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="relative py-20">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-700/60 to-transparent" />
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="mb-14 text-center">
-            <h2 className="text-3xl font-bold text-white sm:text-4xl">
-              By the Numbers
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-slate-400">
-              Join our growing community of dedicated virtual aviators.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {stats.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <div
-                  key={stat.label}
-                  className="group relative flex flex-col items-center gap-4 rounded-2xl border border-navy-700/60 bg-navy-800/40 p-6 backdrop-blur-sm transition-all duration-300 hover:scale-[1.03] hover:border-navy-600/80 hover:bg-navy-800/60 hover:shadow-xl hover:shadow-navy-900/20"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-500/10 ring-1 ring-primary-500/20 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary-500/15">
-                    <Icon className="h-5 w-5 text-primary-400" />
-                  </div>
-                  <p className="text-3xl font-bold text-white">{stat.value}</p>
-                  <p className="text-sm font-medium text-slate-400">{stat.label}</p>
-                </div>
-              );
-            })}
           </div>
         </div>
       </section>
