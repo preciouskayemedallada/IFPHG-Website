@@ -108,7 +108,7 @@ export default function PilotsPage() {
           </p>
         </div>
 
-        {!session && (
+        {!session?.user && (
           <div className="mb-10 rounded-2xl border border-navy-700/60 bg-navy-800/40 p-8 text-center backdrop-blur-sm md:p-12">
             <Plane className="mx-auto h-12 w-12 text-primary-400" />
             <h2 className="mt-4 text-2xl font-bold text-white">
