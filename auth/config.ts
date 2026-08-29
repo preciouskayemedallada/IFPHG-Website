@@ -26,16 +26,35 @@ export const authConfig = {
       async authorize(credentials: { access_token?: string; refresh_token?: string; expires_at?: string }) {
         if (!credentials?.access_token) return null;
         const payload = decodeJwtPayload(credentials.access_token);
-        if (!payload) return null;
-        return {
-          id: (payload.sub as string) || (payload.id as string) || "",
-          name: (payload.name as string) || (payload.preferred_username as string) || "",
-          email: (payload.email as string) || "",
-          image: (payload.picture as string) || "",
-          access_token: credentials.access_token,
-          refresh_token: credentials.refresh_token,
-          expires_at: credentials.expires_at,
-        };
+        if (payload && (payload.sub || payload.id)) {
+          return {
+            id: (payload.sub as string) || (payload.id as string),
+            name: (payload.name as string) || (payload.preferred_username as string) || "",
+            email: (payload.email as string) || "",
+            image: (payload.picture as string) || "",
+            access_token: credentials.access_token,
+            refresh_token: credentials.refresh_token,
+            expires_at: credentials.expires_at,
+          };
+        }
+        try {
+          const res = await fetch("https://api.infiniteflight.com/connect/userinfo", {
+            headers: { Authorization: `Bearer ${credentials.access_token}` },
+          });
+          if (!res.ok) return null;
+          const profile = await res.json();
+          return {
+            id: profile.sub || profile.id || "",
+            name: profile.name || profile.preferred_username || "",
+            email: profile.email || "",
+            image: profile.picture || "",
+            access_token: credentials.access_token,
+            refresh_token: credentials.refresh_token,
+            expires_at: credentials.expires_at,
+          };
+        } catch {
+          return null;
+        }
       },
     },
   ],

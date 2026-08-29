@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const state = url.searchParams.get("state");
 
   if (!code) {
-    return NextResponse.redirect(new URL("/login?error=missing_code", request.url));
+    return NextResponse.redirect(new URL("/login?error=missing_code", process.env.NEXTAUTH_URL || request.url));
   }
 
   const cookieStore = await cookies();
@@ -16,11 +16,11 @@ export async function GET(request: Request) {
   const codeVerifier = cookieStore.get("ifc_code_verifier")?.value;
 
   if (!state || state !== storedState) {
-    return NextResponse.redirect(new URL("/login?error=invalid_state", request.url));
+    return NextResponse.redirect(new URL("/login?error=invalid_state", process.env.NEXTAUTH_URL || request.url));
   }
 
   if (!codeVerifier) {
-    return NextResponse.redirect(new URL("/login?error=missing_verifier", request.url));
+    return NextResponse.redirect(new URL("/login?error=missing_verifier", process.env.NEXTAUTH_URL || request.url));
   }
 
   const tokenRes = await fetch("https://api.infiniteflight.com/auth/v2/connect/token", {
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   if (!tokenRes.ok) {
     const text = await tokenRes.text();
     console.error("IFC token exchange failed", tokenRes.status, text);
-    return NextResponse.redirect(new URL("/login?error=token_exchange_failed", request.url));
+    return NextResponse.redirect(new URL("/login?error=token_exchange_failed", process.env.NEXTAUTH_URL || request.url));
   }
 
   const tokens = await tokenRes.json();
@@ -53,11 +53,12 @@ export async function GET(request: Request) {
 
   if (res?.error) {
     console.error("NextAuth signIn failed", res.error);
-    return NextResponse.redirect(new URL("/login?error=signin_failed", request.url));
+    return NextResponse.redirect(new URL("/login?error=signin_failed", process.env.NEXTAUTH_URL || request.url));
   }
 
   const redirectTo = url.searchParams.get("callbackUrl") || "/pilots";
-  const response = NextResponse.redirect(new URL(redirectTo, request.url));
+  const baseUrl = process.env.NEXTAUTH_URL || request.url;
+  const response = NextResponse.redirect(new URL(redirectTo, baseUrl));
   response.cookies.set("ifc_oauth_state", "", {
     httpOnly: true,
     secure: true,
