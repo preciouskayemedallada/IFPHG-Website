@@ -46,6 +46,8 @@ export async function GET(request: Request) {
 
   const res = await signIn("infiniteflight", {
     access_token: tokens.access_token,
+    refresh_token: tokens.refresh_token,
+    expires_at: tokens.expires_at,
     redirect: false,
   });
 
