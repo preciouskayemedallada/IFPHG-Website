@@ -31,13 +31,14 @@ export async function GET(request: Request) {
   const tokenRes = await fetch("https://api.infiniteflight.com/auth/v2/connect/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      client_id: process.env.IF_OAUTH_CLIENT_ID || "",
-      code,
-      redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/ifc-callback`,
-      code_verifier: codeVerifier,
-    }),
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        client_id: process.env.IF_OAUTH_CLIENT_ID || "",
+        client_secret: process.env.IF_OAUTH_CLIENT_SECRET || "",
+        code,
+        redirect_uri: `${process.env.NEXTAUTH_URL}/api/auth/ifc-callback`,
+        code_verifier: codeVerifier,
+      }),
   });
 
   if (!tokenRes.ok) {
