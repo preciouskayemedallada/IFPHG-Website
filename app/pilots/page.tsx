@@ -135,14 +135,12 @@ export default function PilotsPage() {
               <p className="text-sm text-slate-400">
                 Welcome, <span className="font-semibold text-white">{session.user?.name}</span>
               </p>
-              <form action="/api/auth/logout" method="POST">
-                <button
-                  type="submit"
-                  className="text-xs font-medium text-slate-400 underline underline-offset-4 hover:text-white"
-                >
-                  Logout
-                </button>
-              </form>
+              <a
+                href="/api/auth/logout"
+                className="text-xs font-medium text-slate-400 underline underline-offset-4 hover:text-white"
+              >
+                Logout
+              </a>
             </div>
 
             {statsLoading && (
