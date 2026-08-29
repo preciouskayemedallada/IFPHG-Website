@@ -1,7 +1,8 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { Plane, Users, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plane, Users, FileText, Award, Clock, Activity, Gauge } from "lucide-react";
 
 interface Pilot {
   id: string;
@@ -22,11 +23,48 @@ interface Pirep {
   date: string;
 }
 
+interface UserStats {
+  userId: string;
+  discourseUsername: string;
+  grade: number;
+  flightTime: number;
+  landingCount: number;
+  onlineFlights: number;
+  xp: number;
+  atcOperations: number;
+  atcRank: number | null;
+  violations: number;
+  roles: number[];
+}
+
 const pilots: Pilot[] = [];
 const pireps: Pirep[] = [];
 
+function formatHours(minutes: number) {
+  const hours = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  return `${hours}h ${mins}m`;
+}
+
 export default function PilotsPage() {
   const { data: session, status } = useSession();
+  const [stats, setStats] = useState<UserStats | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    setLoading(true);
+    setError(null);
+    fetch(`/api/user/stats?userId=${encodeURIComponent(session.user.id)}`)
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Failed to fetch stats");
+        const data = await r.json();
+        setStats(data);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [session?.user?.id]);
 
   if (status === "loading") {
     return (
@@ -81,6 +119,49 @@ export default function PilotsPage() {
                 Welcome, <span className="font-semibold text-white">{session.user?.name}</span>
               </p>
             </div>
+
+            {loading && (
+              <div className="mb-10 text-center text-sm text-slate-400">Loading your stats...</div>
+            )}
+            {error && (
+              <div className="mb-10 rounded-2xl border border-red-500/40 bg-red-500/10 p-6 text-center text-sm text-red-300">
+                Failed to load stats: {error}
+              </div>
+            )}
+            {stats && (
+              <div className="mb-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-navy-700/60 bg-navy-800/40 p-4 text-center backdrop-blur-sm">
+                  <Award className="h-5 w-5 text-accent-400" />
+                  <p className="text-xl font-bold text-white">Grade {stats.grade}</p>
+                  <p className="text-xs text-slate-400">Grade</p>
+                </div>
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-navy-700/60 bg-navy-800/40 p-4 text-center backdrop-blur-sm">
+                  <Clock className="h-5 w-5 text-primary-400" />
+                  <p className="text-xl font-bold text-white">{formatHours(stats.flightTime)}</p>
+                  <p className="text-xs text-slate-400">Flight Time</p>
+                </div>
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-navy-700/60 bg-navy-800/40 p-4 text-center backdrop-blur-sm">
+                  <Activity className="h-5 w-5 text-primary-400" />
+                  <p className="text-xl font-bold text-white">{stats.onlineFlights.toLocaleString()}</p>
+                  <p className="text-xs text-slate-400">Flights</p>
+                </div>
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-navy-700/60 bg-navy-800/40 p-4 text-center backdrop-blur-sm">
+                  <Plane className="h-5 w-5 text-primary-400" />
+                  <p className="text-xl font-bold text-white">{stats.landingCount.toLocaleString()}</p>
+                  <p className="text-xs text-slate-400">Landings</p>
+                </div>
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-navy-700/60 bg-navy-800/40 p-4 text-center backdrop-blur-sm">
+                  <Gauge className="h-5 w-5 text-primary-400" />
+                  <p className="text-xl font-bold text-white">{Math.round(stats.xp).toLocaleString()}</p>
+                  <p className="text-xs text-slate-400">XP</p>
+                </div>
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-navy-700/60 bg-navy-800/40 p-4 text-center backdrop-blur-sm">
+                  <Users className="h-5 w-5 text-primary-400" />
+                  <p className="text-xl font-bold text-white">{stats.atcOperations.toLocaleString()}</p>
+                  <p className="text-xs text-slate-400">ATC Ops</p>
+                </div>
+              </div>
+            )}
 
             {/* Search / Filter Bar (visual only) */}
             <div className="mb-10 relative">
