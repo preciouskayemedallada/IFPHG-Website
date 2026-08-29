@@ -126,7 +126,7 @@ export default function AboutPage() {
           <div className="relative border-l border-navy-700/60 pl-8 md:pl-10">
             {[
               {
-                date: "August 2020",
+                date: "August 2016",
                 title: "Founding",
                 description:
                   "IFPHG was founded by a group of passionate Filipino flight simulator enthusiasts with a shared vision of creating a professional virtual airline.",
