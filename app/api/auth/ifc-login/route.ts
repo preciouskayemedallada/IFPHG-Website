@@ -1,14 +1,20 @@
+import { randomBytes, createHmac } from "crypto";
 import { NextResponse } from "next/server";
 
+function base64url(input: Buffer) {
+  return input.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 export async function GET() {
+  const codeVerifier = base64url(randomBytes(32));
+  const codeChallenge = base64url(createHmac("sha256", codeVerifier).digest());
+
   const clientId = process.env.IF_OAUTH_CLIENT_ID;
   const redirectUri = `${process.env.NEXTAUTH_URL}/api/auth/ifc-callback`;
   const scope =
     "openid profile offline_access live:organizations.read live:aircraft.read live:schedules.read";
 
-  const state = Buffer.from(
-    JSON.stringify({ ts: Date.now() }),
-  ).toString("base64url");
+  const state = base64url(randomBytes(16));
 
   const url = new URL("https://api.infiniteflight.com/auth/v2/connect/authorize");
   url.searchParams.set("response_type", "code");
@@ -16,9 +22,18 @@ export async function GET() {
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("scope", scope);
   url.searchParams.set("state", state);
+  url.searchParams.set("code_challenge", codeChallenge);
+  url.searchParams.set("code_challenge_method", "S256");
 
   const response = NextResponse.redirect(url);
   response.cookies.set("ifc_oauth_state", state, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 600,
+    path: "/",
+  });
+  response.cookies.set("ifc_code_verifier", codeVerifier, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
