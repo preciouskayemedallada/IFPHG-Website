@@ -6,7 +6,6 @@ import {
   Clock,
   ArrowRight,
 } from "lucide-react";
-import AircraftCard from "@/components/AircraftCard";
 
 const stats = [
   {
@@ -28,27 +27,6 @@ const stats = [
     label: "Flight Hours",
     value: "8,920",
     icon: Clock,
-  },
-];
-
-const featuredFleet = [
-  {
-    registration: "RP-C001",
-    aircraftType: "Airbus A320-232",
-    status: "Available" as const,
-    callsign: "IFPHG-001",
-  },
-  {
-    registration: "RP-C002",
-    aircraftType: "Boeing 737-800",
-    status: "In Flight" as const,
-    callsign: "IFPHG-002",
-  },
-  {
-    registration: "RP-C003",
-    aircraftType: "Airbus A321neo",
-    status: "Available" as const,
-    callsign: "IFPHG-003",
   },
 ];
 
@@ -130,46 +108,6 @@ export default function HomePage() {
                 </div>
               );
             })}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Fleet Section */}
-      <section className="relative py-20">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-700/60 to-transparent" />
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="mb-10 flex items-end justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">
-                Featured Fleet
-              </h2>
-              <p className="mt-2 max-w-xl text-slate-400">
-                A glimpse into our modern and diverse fleet of aircraft.
-              </p>
-            </div>
-            <Link
-              href="/fleet"
-              className="group hidden items-center gap-1.5 text-sm font-medium text-primary-400 transition-colors hover:text-primary-300 sm:flex"
-            >
-              View all aircraft
-              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {featuredFleet.map((aircraft) => (
-              <AircraftCard key={aircraft.registration} {...aircraft} />
-            ))}
-          </div>
-
-          <div className="mt-8 text-center sm:hidden">
-            <Link
-              href="/fleet"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-400 transition-colors hover:text-primary-300"
-            >
-              View all aircraft
-              <ArrowRight className="h-4 w-4" />
-            </Link>
           </div>
         </div>
       </section>
