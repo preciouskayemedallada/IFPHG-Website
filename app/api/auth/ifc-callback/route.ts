@@ -1,5 +1,10 @@
+import { randomBytes, createHash, createHmac } from "crypto";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+
+function base64url(input: Buffer) {
+  return input.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -9,6 +14,13 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   } catch {
     return null;
   }
+}
+
+function createSessionJwt(payload: Record<string, unknown>, secret: string): string {
+  const header = base64url(Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })));
+  const body = base64url(Buffer.from(JSON.stringify(payload)));
+  const signature = base64url(createHmac("sha256", secret).update(`${header}.${body}`).digest());
+  return `${header}.${body}.${signature}`;
 }
 
 export async function GET(request: Request) {
@@ -55,27 +67,34 @@ export async function GET(request: Request) {
   const payload = decodeJwtPayload(tokens.access_token) || {};
   const now = Math.floor(Date.now() / 1000);
 
-  const name = (payload.name as string) || (payload.preferred_username as string) || "";
-  const email = (payload.email as string) || "";
-  const picture = (payload.picture as string) || "";
-  const userId = (payload.sub as string) || (payload.id as string) || "";
-  const callbackUrl = url.searchParams.get("callbackUrl") || "/pilots";
+  const sessionPayload = {
+    name: (payload.name as string) || (payload.preferred_username as string) || "",
+    email: (payload.email as string) || "",
+    picture: (payload.picture as string) || "",
+    sub: (payload.sub as string) || (payload.id as string) || "",
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    expiresAt: tokens.expires_at ? Number(tokens.expires_at) : now + 1800,
+    iat: now,
+    exp: now + 30 * 24 * 60 * 60,
+  };
 
-  const html = `<!DOCTYPE html>
-<html>
-<body>
-  <form id="form" action="${process.env.NEXTAUTH_URL}/api/auth/signin/credentials" method="POST">
-    <input type="hidden" name="access_token" value="${escapeHtml(tokens.access_token)}" />
-    <input type="hidden" name="refresh_token" value="${escapeHtml(tokens.refresh_token || "")}" />
-    <input type="hidden" name="expires_at" value="${tokens.expires_at || now + 1800}" />
-    <input type="hidden" name="callbackUrl" value="${escapeHtml(callbackUrl)}" />
-  </form>
-  <script>document.getElementById('form').submit();</script>
-</body>
-</html>`;
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    console.error("NEXTAUTH_SECRET is not configured");
+    return NextResponse.redirect(new URL("/login?error=server_error", process.env.NEXTAUTH_URL || request.url));
+  }
 
-  const response = new NextResponse(html, {
-    headers: { "content-type": "text/html" },
+  const sessionToken = createSessionJwt(sessionPayload, secret);
+  const redirectTo = url.searchParams.get("callbackUrl") || "/pilots";
+  const response = NextResponse.redirect(new URL(redirectTo, process.env.NEXTAUTH_URL || request.url));
+
+  response.cookies.set("ifphg_session", sessionToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    maxAge: 30 * 24 * 60 * 60,
+    path: "/",
   });
 
   response.cookies.set("ifc_oauth_state", "", {
@@ -94,12 +113,4 @@ export async function GET(request: Request) {
   });
 
   return response;
-}
-
-function escapeHtml(str: string) {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

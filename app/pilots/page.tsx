@@ -1,6 +1,5 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { Plane, Users, FileText, Award, Clock, Activity, Gauge } from "lucide-react";
 
@@ -21,6 +20,13 @@ interface Pirep {
   aircraft: string;
   duration: string;
   date: string;
+}
+
+interface User {
+  name?: string;
+  email?: string;
+  image?: string;
+  id?: string;
 }
 
 interface UserStats {
@@ -47,26 +53,37 @@ function formatHours(minutes: number) {
 }
 
 export default function PilotsPage() {
-  const { data: session, status } = useSession();
+  const [session, setSession] = useState<{ user: User } | null>(null);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<UserStats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => {
+        setSession(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   useEffect(() => {
     if (!session?.user?.id) return;
-    setLoading(true);
-    setError(null);
+    setStatsLoading(true);
+    setStatsError(null);
     fetch(`/api/user/stats?userId=${encodeURIComponent(session.user.id)}`)
       .then(async (r) => {
         if (!r.ok) throw new Error("Failed to fetch stats");
         const data = await r.json();
         setStats(data);
       })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch((e) => setStatsError(e.message))
+      .finally(() => setStatsLoading(false));
   }, [session?.user?.id]);
 
-  if (status === "loading") {
+  if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-sm text-slate-400">Loading...</p>
@@ -118,14 +135,22 @@ export default function PilotsPage() {
               <p className="text-sm text-slate-400">
                 Welcome, <span className="font-semibold text-white">{session.user?.name}</span>
               </p>
+              <form action="/api/auth/logout" method="POST">
+                <button
+                  type="submit"
+                  className="text-xs font-medium text-slate-400 underline underline-offset-4 hover:text-white"
+                >
+                  Logout
+                </button>
+              </form>
             </div>
 
-            {loading && (
+            {statsLoading && (
               <div className="mb-10 text-center text-sm text-slate-400">Loading your stats...</div>
             )}
-            {error && (
+            {statsError && (
               <div className="mb-10 rounded-2xl border border-red-500/40 bg-red-500/10 p-6 text-center text-sm text-red-300">
-                Failed to load stats: {error}
+                Failed to load stats: {statsError}
               </div>
             )}
             {stats && (
