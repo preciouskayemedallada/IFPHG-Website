@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { Plane, Crosshair } from "lucide-react";
 
 export interface FleetAircraft {
@@ -20,13 +23,10 @@ export interface FleetAircraft {
   flightPlanWaypoints: { lat: number; lon: number }[];
 }
 
-const statusColors: Record<string, string> = {
+const STATE_COLORS: Record<string, string> = {
   "In Flight": "#10B981",
   "On Ground": "#3B82F6",
   Stopped: "#8B5CF6",
-  "Virtual Hangar": "#64748B",
-  Maintenance: "#F97316",
-  Available: "#10B981",
 };
 
 function FitBounds({ aircraft }: { aircraft: FleetAircraft[] }) {
@@ -61,16 +61,16 @@ function FlightPlanLine({ waypoints, color }: { waypoints: { lat: number; lon: n
   useEffect(() => {
     if (!map || waypoints.length < 2) return;
 
-    const maxPoints = 50;
+    const maxPoints = 60;
     const step = Math.max(1, Math.floor(waypoints.length / maxPoints));
     const sampled = waypoints.filter((_, idx) => idx % step === 0 || idx === waypoints.length - 1);
     const latLngs = sampled.map((w) => [w.lat, w.lon] as L.LatLngExpression);
 
     const polyline = L.polyline(latLngs, {
       color: color || "#3B82F6",
-      weight: 4,
-      opacity: 0.9,
-      dashArray: "10, 8",
+      weight: 2,
+      opacity: 0.35,
+      dashArray: "8, 10",
       lineCap: "round",
       lineJoin: "round",
     });
@@ -127,9 +127,176 @@ function MapClickHandler({ onSelect }: { onSelect: (id: string | null) => void }
   return null;
 }
 
+function MarkerClusterLayer({ aircraft, onSelect }: { aircraft: FleetAircraft[]; onSelect: (id: string | null) => void }) {
+  const map = useMap();
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+
+    const cluster = L.markerClusterGroup({
+      chunkedLoading: true,
+      maxClusterRadius: 40,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      iconCreateFunction: (cluster: L.MarkerCluster) => {
+        const count = cluster.getChildCount();
+        let size = "small";
+        let dim = 36;
+        if (count > 10) {
+          size = "large";
+          dim = 48;
+        } else if (count > 3) {
+          size = "medium";
+          dim = 42;
+        }
+        return L.divIcon({
+          html: `<div style="
+            width:${dim}px;
+            height:${dim}px;
+            border-radius:50%;
+            background:#0f172a;
+            color:#e2e8f0;
+            border:2px solid #3B82F6;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:700;
+            font-size:${size === 'large' ? '16px' : size === 'medium' ? '14px' : '12px'};
+            box-shadow:0 0 0 4px rgba(59,130,246,0.25);
+          ">${count}</div>`,
+          className: "marker-cluster-custom",
+          iconSize: L.point(dim, dim),
+        });
+      },
+    });
+
+    clusterRef.current = cluster;
+    map.addLayer(cluster);
+
+    return () => {
+      map.removeLayer(cluster);
+      clusterRef.current = null;
+    };
+  }, [map]);
+
+  useEffect(() => {
+    const cluster = clusterRef.current;
+    if (!cluster) return;
+
+    cluster.clearLayers();
+
+    for (const ac of aircraft) {
+      if (!ac.location || ac.location.lat == null || ac.location.lon == null) continue;
+
+      const color = STATE_COLORS[ac.aircraftState] || "#3B82F6";
+      const label = ac.registration || ac.callsign || "";
+
+      const iconHtml = `
+        <div style="
+          width:28px;
+          height:28px;
+          border-radius:50%;
+          background:${color};
+          border:2px solid rgba(255,255,255,0.9);
+          box-shadow:0 0 0 2px rgba(15,23,42,0.9), 0 0 8px ${color}66;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+        ">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" style="width:14px;height:14px;">
+            <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.9.5 1.4.3l.5-.2c.4-.3.6-.8.4-1.3z"/>
+          </svg>
+        </div>
+        ${label ? `<div style="
+          position:absolute;
+          top:-22px;
+          left:50%;
+          transform:translateX(-50%);
+          background:rgba(15,23,42,0.9);
+          color:#e2e8f0;
+          padding:2px 6px;
+          border-radius:4px;
+          font-size:10px;
+          font-weight:600;
+          white-space:nowrap;
+          border:1px solid #334155;
+          box-shadow:0 2px 4px rgba(0,0,0,0.3);
+        ">${label}</div>` : ""}
+      `;
+
+      const icon = L.divIcon({
+        html: iconHtml,
+        className: "custom-fleet-marker",
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+        popupAnchor: [0, -16],
+      });
+
+      const marker = L.marker([ac.location.lat, ac.location.lon], { icon });
+
+      marker.bindPopup(
+        `<div style="
+          background:#0f172a;
+          color:#e2e8f0;
+          border:1px solid #334155;
+          border-radius:8px;
+          padding:12px;
+          min-width:220px;
+          font-family:Inter,sans-serif;
+        ">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+            <span style="font-weight:700;color:#ffffff;font-size:14px;">${ac.registration}</span>
+            <span style="font-size:11px;color:#94a3b8;background:#1e293b;padding:2px 6px;border-radius:4px;">${ac.callsign || ""}</span>
+          </div>
+          <div style="font-size:12px;color:#cbd5e1;margin-bottom:10px;">${ac.aircraftType}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;">
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:#94a3b8;">State</span>
+              <span style="font-weight:600;color:${STATE_COLORS[ac.aircraftState] || "#cbd5e1"};">${ac.aircraftState}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:#94a3b8;">Fleet Status</span>
+              <span style="font-weight:600;color:${ac.fleetStatus === "Active" ? "#10B981" : "#F59E0B"};">${ac.fleetStatus}</span>
+            </div>
+            ${ac.currentPilot ? `
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:#94a3b8;">Pilot</span>
+              <span style="font-weight:600;color:#e2e8f0;">${ac.currentPilot}</span>
+            </div>` : ""}
+            ${ac.flightPlan && (ac.flightPlan.from || ac.flightPlan.to) ? `
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:#94a3b8;">Route</span>
+              <span style="font-weight:600;color:#e2e8f0;">${ac.flightPlan.from || "???"} → ${ac.flightPlan.to || "???"}</span>
+            </div>` : ""}
+            ${ac.lastUpdate ? `
+            <div style="margin-top:6px;color:#64748b;font-size:11px;">
+              Updated: ${new Date(ac.lastUpdate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            </div>` : ""}
+          </div>
+        </div>
+      `);
+
+      marker.on("click", () => {
+        onSelect(ac.id);
+      });
+
+      cluster.addLayer(marker);
+    }
+
+    return () => {
+      cluster.clearLayers();
+    };
+  }, [aircraft, onSelect]);
+
+  return null;
+}
+
 export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
   const [mounted, setMounted] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
   const hasPositions = useMemo(
     () => aircraft.some((ac) => ac.location && ac.location.lat != null && ac.location.lon != null),
     [aircraft]
@@ -165,14 +332,6 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
     );
   }
 
-  const handleMarkerClick = (id: string) => {
-    setSelectedId(id);
-  };
-
-  const handleMapClick = () => {
-    setSelectedId(null);
-  };
-
   const selectedAircraft = aircraft.find((ac) => ac.id === selectedId);
 
   return (
@@ -197,18 +356,35 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
           .leaflet-container {
             background: #0f172a;
           }
-          .fleet-map-popup .leaflet-popup-content-wrapper {
+          .marker-cluster-custom {
+            background: transparent;
+            border: none;
+          }
+          .custom-fleet-marker {
+            background: transparent;
+            border: none;
+          }
+          .leaflet-popup-content-wrapper {
             background: #0f172a;
             color: #e2e8f0;
             border: 1px solid #334155;
             border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
           }
-          .fleet-map-popup .leaflet-popup-tip {
+          .leaflet-popup-tip {
             background: #0f172a;
             border: 1px solid #334155;
           }
-          .fleet-map-popup .leaflet-popup-close-button {
+          .leaflet-popup-close-button {
             color: #94a3b8;
+          }
+          .leaflet-control-attribution {
+            background: rgba(15,23,42,0.8) !important;
+            color: #94a3b8 !important;
+            font-size: 10px;
+          }
+          .leaflet-control-attribution a {
+            color: #3B82F6 !important;
           }
         `}</style>
         <MapContainer
@@ -216,81 +392,32 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
           zoom={6}
           className="h-full w-full"
           zoomControl={true}
-          attributionControl={false}
+          attributionControl={true}
         >
           <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            subdomains={["a", "b", "c"]}
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            subdomains={["a", "b", "c", "d"]}
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           />
           <FitBounds aircraft={aircraft} />
-          <CenterButton aircraft={aircraft} onSelect={handleMapClick} />
-          <MapClickHandler onSelect={handleMapClick} />
-          {selectedAircraft && selectedAircraft.flightPlanWaypoints.length >= 2 && (
-            <FlightPlanLine
-              waypoints={selectedAircraft.flightPlanWaypoints}
-              color={statusColors[selectedAircraft.aircraftState] || "#3B82F6"}
-            />
-          )}
+          <CenterButton aircraft={aircraft} onSelect={setSelectedId} />
+          <MapClickHandler onSelect={setSelectedId} />
+          <MarkerClusterLayer aircraft={aircraft} onSelect={setSelectedId} />
           {aircraft
-            .filter((ac): ac is FleetAircraft & { location: { lat: number; lon: number } } => !!ac.location && ac.location.lat != null && ac.location.lon != null)
+            .filter((ac) => ac.id === selectedId)
             .map((ac) => {
-              const color = statusColors[ac.aircraftState] || "#3B82F6";
-              const customIcon = new L.Icon({
-                iconUrl: `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color.replace('#', '%23')}" stroke="white" stroke-width="1.5"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.9.5 1.4.3l.5-.2c.4-.3.6-.8.4-1.3z"/></svg>`)}`,
-                iconSize: [28, 28],
-                iconAnchor: [14, 14],
-                popupAnchor: [0, -14],
-              });
-              return (
-                <Marker
-                  key={ac.id}
-                  position={[ac.location.lat, ac.location.lon]}
-                  icon={customIcon}
-                  eventHandlers={{
-                    click: () => handleMarkerClick(ac.id),
-                  }}
-                >
-                  <Popup>
-                    <div className="max-w-[260px] rounded-lg bg-navy-900 p-3 text-slate-200">
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <span className="text-sm font-bold text-white">{ac.registration}</span>
-                        <span className="text-xs text-slate-400">{ac.callsign}</span>
-                      </div>
-                      <p className="mb-2 text-xs text-slate-300">{ac.aircraftType}</p>
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">State</span>
-                          <span className="font-medium">{ac.aircraftState}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Fleet</span>
-                          <span className="font-medium">{ac.fleetStatus}</span>
-                        </div>
-                        {ac.currentPilot && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Pilot</span>
-                            <span className="font-medium">{ac.currentPilot}</span>
-                          </div>
-                        )}
-                        {ac.flightPlan && (ac.flightPlan.from || ac.flightPlan.to) && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Flight Plan</span>
-                            <span className="font-medium">
-                              {ac.flightPlan.from || "???"} → {ac.flightPlan.to || "???"}
-                            </span>
-                          </div>
-                        )}
-                        {ac.lastUpdate && (
-                          <div className="pt-1 text-slate-500">
-                            Updated: {new Date(ac.lastUpdate).toLocaleTimeString()}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </Popup>
-                </Marker>
-              );
+              if (!ac.location || ac.location.lat == null || ac.location.lon == null) return null;
+              const color = STATE_COLORS[ac.aircraftState] || "#3B82F6";
+              if (ac.flightPlanWaypoints.length >= 2) {
+                return (
+                  <FlightPlanLine
+                    key={`route-${ac.id}`}
+                    waypoints={ac.flightPlanWaypoints}
+                    color={color}
+                  />
+                );
+              }
+              return null;
             })}
         </MapContainer>
       </div>
