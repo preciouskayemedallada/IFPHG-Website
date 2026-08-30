@@ -65,14 +65,30 @@ export async function GET(request: Request) {
 
   const tokens = await tokenRes.json();
   console.error("IFC token exchange success", JSON.stringify({ hasAccessToken: !!tokens.access_token, hasRefreshToken: !!tokens.refresh_token, expiresAt: tokens.expires_at }));
+  
+  let profile: Record<string, unknown> = {};
+  try {
+    const profileRes = await fetch("https://api.infiniteflight.com/connect/userinfo", {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+    if (profileRes.ok) {
+      profile = await profileRes.json();
+      console.error("IFC userinfo success", JSON.stringify({ name: profile.name, email: profile.email, sub: profile.sub }));
+    } else {
+      console.error("IFC userinfo failed", profileRes.status);
+    }
+  } catch (e) {
+    console.error("IFC userinfo error", e);
+  }
+  
   const payload = decodeJwtPayload(tokens.access_token) || {};
   const now = Math.floor(Date.now() / 1000);
 
   const sessionPayload = {
-    name: (payload.name as string) || (payload.preferred_username as string) || "",
-    email: (payload.email as string) || "",
-    picture: (payload.picture as string) || "",
-    sub: (payload.sub as string) || (payload.id as string) || "",
+    name: (profile.name as string) || (payload.name as string) || (profile.preferred_username as string) || (payload.preferred_username as string) || "",
+    email: (profile.email as string) || (payload.email as string) || "",
+    picture: (profile.picture as string) || (payload.picture as string) || "",
+    sub: (profile.sub as string) || (payload.sub as string) || (payload.id as string) || "",
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token,
     expiresAt: tokens.expires_at ? Number(tokens.expires_at) : now + 1800,
