@@ -209,9 +209,9 @@ async function fetchWithAuth(url: string, token: string): Promise<Response> {
 
 export async function GET() {
   try {
-    const token = process.env.IF_ACCESS_TOKEN;
+    const token = process.env.IF_BEARER || process.env.IF_ACCESS_TOKEN;
     if (!token) {
-      console.error("IF_ACCESS_TOKEN is not configured");
+      console.error("IF API token is not configured");
       return NextResponse.json(
         { error: "Configuration error" },
         { status: 500 }
