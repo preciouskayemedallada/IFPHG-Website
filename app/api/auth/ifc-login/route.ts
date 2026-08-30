@@ -26,7 +26,6 @@ export async function GET() {
   url.searchParams.set("code_challenge_method", "S256");
 
   const response = NextResponse.redirect(url);
-  console.error("IFC auth redirect", JSON.stringify({ url: url.toString(), state, codeChallenge }));
   response.cookies.set("ifc_oauth_state", state, {
     httpOnly: true,
     secure: true,

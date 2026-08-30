@@ -64,31 +64,20 @@ export async function GET(request: Request) {
   }
 
   const tokens = await tokenRes.json();
-  console.error("IFC token exchange success", JSON.stringify({ hasAccessToken: !!tokens.access_token, hasRefreshToken: !!tokens.refresh_token, expiresAt: tokens.expires_at }));
-  
-  let profile: Record<string, unknown> = {};
-  try {
-    const profileRes = await fetch("https://api.infiniteflight.com/connect/userinfo", {
-      headers: { Authorization: `Bearer ${tokens.access_token}` },
-    });
-    if (profileRes.ok) {
-      profile = await profileRes.json();
-      console.error("IFC userinfo success", JSON.stringify({ name: profile.name, email: profile.email, sub: profile.sub }));
-    } else {
-      console.error("IFC userinfo failed", profileRes.status);
-    }
-  } catch (e) {
-    console.error("IFC userinfo error", e);
-  }
   
   const payload = decodeJwtPayload(tokens.access_token) || {};
   const now = Math.floor(Date.now() / 1000);
 
+  const name = (payload.name as string) || (payload.preferred_username as string) || (payload.nickname as string) || (payload.email as string) || `Pilot-${String(payload.sub || "").slice(0, 8)}`;
+  const email = (payload.email as string) || "";
+  const picture = (payload.picture as string) || "";
+  const sub = (payload.sub as string) || (payload.id as string) || "";
+
   const sessionPayload = {
-    name: (profile.name as string) || (payload.name as string) || (profile.preferred_username as string) || (payload.preferred_username as string) || "",
-    email: (profile.email as string) || (payload.email as string) || "",
-    picture: (profile.picture as string) || (payload.picture as string) || "",
-    sub: (profile.sub as string) || (payload.sub as string) || (payload.id as string) || "",
+    name,
+    email,
+    picture,
+    sub,
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token,
     expiresAt: tokens.expires_at ? Number(tokens.expires_at) : now + 1800,
@@ -102,7 +91,6 @@ export async function GET(request: Request) {
   }
 
   const sessionToken = createSessionJwt(sessionPayload, secret);
-  console.error("IFC session created", JSON.stringify({ name: sessionPayload.name, email: sessionPayload.email, sub: sessionPayload.sub }));
   const rawRedirectTo = url.searchParams.get("callbackUrl") || "/pilots";
   const redirectTo = rawRedirectTo.startsWith("/") ? rawRedirectTo : "/pilots";
   const response = NextResponse.redirect(new URL(redirectTo, process.env.NEXTAUTH_URL || request.url));
