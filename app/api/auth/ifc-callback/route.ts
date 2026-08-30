@@ -37,10 +37,12 @@ export async function GET(request: Request) {
   const codeVerifier = cookieStore.get("ifc_code_verifier")?.value;
 
   if (!state || state !== storedState) {
+    console.error("IFC callback state mismatch", JSON.stringify({ state, storedState }));
     return NextResponse.redirect(new URL("/login?error=invalid_state", process.env.NEXTAUTH_URL || request.url));
   }
 
   if (!codeVerifier) {
+    console.error("IFC callback missing verifier");
     return NextResponse.redirect(new URL("/login?error=missing_verifier", process.env.NEXTAUTH_URL || request.url));
   }
 
