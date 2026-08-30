@@ -59,10 +59,12 @@ export async function GET(request: Request) {
 
   if (!tokenRes.ok) {
     const text = await tokenRes.text();
+    console.error("IFC token exchange failed", tokenRes.status, text);
     return NextResponse.redirect(new URL("/login?error=token_exchange_failed", process.env.NEXTAUTH_URL || request.url));
   }
 
   const tokens = await tokenRes.json();
+  console.error("IFC token exchange success", JSON.stringify({ hasAccessToken: !!tokens.access_token, hasRefreshToken: !!tokens.refresh_token, expiresAt: tokens.expires_at }));
   const payload = decodeJwtPayload(tokens.access_token) || {};
   const now = Math.floor(Date.now() / 1000);
 
@@ -84,6 +86,7 @@ export async function GET(request: Request) {
   }
 
   const sessionToken = createSessionJwt(sessionPayload, secret);
+  console.error("IFC session created", JSON.stringify({ name: sessionPayload.name, email: sessionPayload.email, sub: sessionPayload.sub }));
   const rawRedirectTo = url.searchParams.get("callbackUrl") || "/pilots";
   const redirectTo = rawRedirectTo.startsWith("/") ? rawRedirectTo : "/pilots";
   const response = NextResponse.redirect(new URL(redirectTo, process.env.NEXTAUTH_URL || request.url));
