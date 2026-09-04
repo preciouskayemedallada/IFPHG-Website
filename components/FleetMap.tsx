@@ -20,6 +20,7 @@ export interface FleetAircraft {
   flightPlanWaypoints: { lat: number; lon: number }[];
   altitude?: number | null;
   groundSpeed?: number | null;
+  heading?: number | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -31,20 +32,30 @@ const statusColors: Record<string, string> = {
   Available: "#10B981",
 };
 
-function createPlaneIcon(color: string, selected = false): L.Icon {
+function createPlaneIcon(color: string, heading: number | undefined | null, selected = false): L.Icon {
   const size = selected ? 36 : 28;
   const anchor = selected ? 18 : 14;
-  const svg = selected
-    ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color.replace('#', '%23')}" stroke="white" stroke-width="1.5"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.9.5 1.4.3l.5-.2c.4-.3.6-.8.4-1.3z"/></svg>`
-    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color.replace('#', '%23')}" stroke="white" stroke-width="1.5"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.9.5 1.4.3l.5-.2c.4-.3.6-.8.4-1.3z"/></svg>`;
+  const rotation = heading ?? 0;
 
-  return new L.Icon({
-    iconUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+  return new L.DivIcon({
+    html: `<div style="
+      width:${size}px;
+      height:${size}px;
+      transform:rotate(${rotation}deg);
+      transform-origin:center center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color.replace('#', '%23')}" stroke="white" stroke-width="1.5" width="${size}" height="${size}">
+        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.9.5 1.4.3l.5-.2c.4-.3.6-.8.4-1.3z"/>
+      </svg>
+    </div>`,
+    className: "",
     iconSize: [size, size],
     iconAnchor: [anchor, anchor],
     popupAnchor: [0, -anchor],
-    className: selected ? "selected-marker" : "",
-  });
+  }) as L.Icon;
 }
 
 function FitBounds({ aircraft }: { aircraft: FleetAircraft[] }) {
@@ -92,32 +103,31 @@ function FlightPlanLines({
 
     const layers: L.Layer[] = [];
 
-    aircraft.forEach((ac) => {
-      const waypoints = ac.flightPlanWaypoints;
-      if (!waypoints || waypoints.length < 2) return;
+    const selected = aircraft.find((ac) => ac.id === selectedId);
+    if (!selected) return;
 
-      const color = statusColors[ac.aircraftState] || "#3B82F6";
-      const isSelected = ac.id === selectedId;
-      const sampled =
-        waypoints.length > 100
-          ? waypoints.filter((_, idx) => idx % Math.ceil(waypoints.length / 100) === 0 || idx === waypoints.length - 1)
-          : waypoints;
+    const waypoints = selected.flightPlanWaypoints;
+    if (!waypoints || waypoints.length < 2) return;
 
-      const latLngs = sampled.map((w) => [w.lat, w.lon] as L.LatLngExpression);
+    const sampled =
+      waypoints.length > 100
+        ? waypoints.filter((_, idx) => idx % Math.ceil(waypoints.length / 100) === 0 || idx === waypoints.length - 1)
+        : waypoints;
 
-      const polyline = L.polyline(latLngs, {
-        color: isSelected ? color : "#475569",
-        weight: isSelected ? 4 : 2,
-        opacity: isSelected ? 0.9 : 0.4,
-        dashArray: "10, 8",
-        lineCap: "round",
-        lineJoin: "round",
-        interactive: false,
-      });
+    const latLngs = sampled.map((w) => [w.lat, w.lon] as L.LatLngExpression);
 
-      polyline.addTo(map);
-      layers.push(polyline);
+    const polyline = L.polyline(latLngs, {
+      color: statusColors[selected.aircraftState] || "#3B82F6",
+      weight: 4,
+      opacity: 0.9,
+      dashArray: "10, 8",
+      lineCap: "round",
+      lineJoin: "round",
+      interactive: false,
     });
+
+    polyline.addTo(map);
+    layers.push(polyline);
 
     return () => {
       layers.forEach((layer) => {
@@ -324,7 +334,7 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
             .map((ac) => {
               const color = statusColors[ac.aircraftState] || "#3B82F6";
               const isSelected = ac.id === selectedId;
-              const customIcon = createPlaneIcon(color, isSelected);
+              const customIcon = createPlaneIcon(color, ac.heading, isSelected);
 
               return (
                 <Marker

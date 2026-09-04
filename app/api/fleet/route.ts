@@ -13,6 +13,7 @@ interface LivePosition {
   lastReportUtc?: string;
   username?: string;
   callsign?: string;
+  heading?: number;
 }
 
 interface ScheduleFlight {
@@ -270,6 +271,7 @@ export async function GET() {
       let flightPlan: { from: string | null; to: string | null } | null = null;
       let altitude: number | null = null;
       let groundSpeed: number | null = null;
+      let heading: number | null = null;
 
       if (position) {
         currentPilot = position.username || null;
@@ -280,6 +282,7 @@ export async function GET() {
         };
         altitude = position.altitude ?? null;
         groundSpeed = position.groundSpeed ?? position.speed ?? null;
+        heading = position.heading ?? null;
       } else {
         const infoLoc = info.location || {};
         const infoLat = infoLoc.latitude ?? null;
@@ -343,6 +346,7 @@ export async function GET() {
         flightPlanWaypoints,
         altitude,
         groundSpeed,
+        heading,
       };
     });
 
