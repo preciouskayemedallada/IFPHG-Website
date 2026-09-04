@@ -19,6 +19,8 @@ export interface FleetAircraft {
   flightPlan: { from: string | null; to: string | null } | null;
   callsign: string | null;
   flightPlanWaypoints: { lat: number; lon: number }[];
+  altitude?: number | null;
+  groundSpeed?: number | null;
 }
 
 const REFRESH_INTERVAL_MS = 60 * 1000;

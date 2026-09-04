@@ -209,9 +209,9 @@ async function fetchWithAuth(url: string, token: string): Promise<Response> {
 
 export async function GET() {
   try {
-    const token = process.env.IF_BEARER || process.env.IF_ACCESS_TOKEN;
+    const token = process.env.IF_ACCESS_TOKEN;
     if (!token) {
-      console.error("IF bearer token is not configured");
+      console.error("IF_ACCESS_TOKEN is not configured");
       return NextResponse.json(
         { error: "Configuration error" },
         { status: 500 }
@@ -268,6 +268,8 @@ export async function GET() {
       let lastUpdate: string | null = null;
       let location: { lat: number | null; lon: number | null } | null = null;
       let flightPlan: { from: string | null; to: string | null } | null = null;
+      let altitude: number | null = null;
+      let groundSpeed: number | null = null;
 
       if (position) {
         currentPilot = position.username || null;
@@ -276,6 +278,8 @@ export async function GET() {
           lat: position.latitude ?? null,
           lon: position.longitude ?? null,
         };
+        altitude = position.altitude ?? null;
+        groundSpeed = position.groundSpeed ?? position.speed ?? null;
       } else {
         const infoLoc = info.location || {};
         const infoLat = infoLoc.latitude ?? null;
@@ -286,6 +290,8 @@ export async function GET() {
         if (info.pilotName) {
           currentPilot = info.pilotName;
         }
+        altitude = info.altitude ?? null;
+        groundSpeed = info.groundSpeed ?? null;
       }
 
       if (schedule) {
@@ -317,7 +323,7 @@ export async function GET() {
           if (!loc || typeof loc !== "object") continue;
           const lat = Number(loc.latitude);
           const lon = Number(loc.longitude);
-          if (Number.isFinite(lat) && Number.isFinite(lon)) {
+          if (Number.isFinite(lat) && Number.isFinite(lon) && !(lat === 0 && lon === 0)) {
             flightPlanWaypoints.push({ lat, lon });
           }
         }
@@ -335,6 +341,8 @@ export async function GET() {
         flightPlan,
         callsign,
         flightPlanWaypoints,
+        altitude,
+        groundSpeed,
       };
     });
 

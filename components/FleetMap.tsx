@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Plane, Crosshair } from "lucide-react";
+import { Plane, Crosshair, Navigation } from "lucide-react";
 
 export interface FleetAircraft {
   id: string;
@@ -18,6 +18,8 @@ export interface FleetAircraft {
   flightPlan: { from: string | null; to: string | null } | null;
   callsign: string | null;
   flightPlanWaypoints: { lat: number; lon: number }[];
+  altitude?: number | null;
+  groundSpeed?: number | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -29,6 +31,22 @@ const statusColors: Record<string, string> = {
   Available: "#10B981",
 };
 
+function createPlaneIcon(color: string, selected = false): L.Icon {
+  const size = selected ? 36 : 28;
+  const anchor = selected ? 18 : 14;
+  const svg = selected
+    ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color.replace('#', '%23')}" stroke="white" stroke-width="1.5"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.9.5 1.4.3l.5-.2c.4-.3.6-.8.4-1.3z"/></svg>`
+    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color.replace('#', '%23')}" stroke="white" stroke-width="1.5"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.9.5 1.4.3l.5-.2c.4-.3.6-.8.4-1.3z"/></svg>`;
+
+  return new L.Icon({
+    iconUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+    iconSize: [size, size],
+    iconAnchor: [anchor, anchor],
+    popupAnchor: [0, -anchor],
+    className: selected ? "selected-marker" : "",
+  });
+}
+
 function FitBounds({ aircraft }: { aircraft: FleetAircraft[] }) {
   const map = useMap();
   const hasFitted = useRef(false);
@@ -38,6 +56,11 @@ function FitBounds({ aircraft }: { aircraft: FleetAircraft[] }) {
     for (const ac of aircraft) {
       if (ac.location && ac.location.lat != null && ac.location.lon != null) {
         bounds.push([ac.location.lat, ac.location.lon]);
+      }
+      if (ac.flightPlanWaypoints.length > 0) {
+        for (const wp of ac.flightPlanWaypoints) {
+          bounds.push([wp.lat, wp.lon]);
+        }
       }
     }
     return bounds;
@@ -55,32 +78,53 @@ function FitBounds({ aircraft }: { aircraft: FleetAircraft[] }) {
   return null;
 }
 
-function FlightPlanLine({ waypoints, color }: { waypoints: { lat: number; lon: number }[]; color: string }) {
+function FlightPlanLines({
+  aircraft,
+  selectedId,
+}: {
+  aircraft: FleetAircraft[];
+  selectedId: string | null;
+}) {
   const map = useMap();
 
   useEffect(() => {
-    if (!map || waypoints.length < 2) return;
+    if (!map) return;
 
-    const maxPoints = 50;
-    const step = Math.max(1, Math.floor(waypoints.length / maxPoints));
-    const sampled = waypoints.filter((_, idx) => idx % step === 0 || idx === waypoints.length - 1);
-    const latLngs = sampled.map((w) => [w.lat, w.lon] as L.LatLngExpression);
+    const layers: L.Layer[] = [];
 
-    const polyline = L.polyline(latLngs, {
-      color: color || "#3B82F6",
-      weight: 4,
-      opacity: 0.9,
-      dashArray: "10, 8",
-      lineCap: "round",
-      lineJoin: "round",
+    aircraft.forEach((ac) => {
+      const waypoints = ac.flightPlanWaypoints;
+      if (!waypoints || waypoints.length < 2) return;
+
+      const color = statusColors[ac.aircraftState] || "#3B82F6";
+      const isSelected = ac.id === selectedId;
+      const sampled =
+        waypoints.length > 100
+          ? waypoints.filter((_, idx) => idx % Math.ceil(waypoints.length / 100) === 0 || idx === waypoints.length - 1)
+          : waypoints;
+
+      const latLngs = sampled.map((w) => [w.lat, w.lon] as L.LatLngExpression);
+
+      const polyline = L.polyline(latLngs, {
+        color: isSelected ? color : "#475569",
+        weight: isSelected ? 4 : 2,
+        opacity: isSelected ? 0.9 : 0.4,
+        dashArray: "10, 8",
+        lineCap: "round",
+        lineJoin: "round",
+        interactive: false,
+      });
+
+      polyline.addTo(map);
+      layers.push(polyline);
     });
 
-    polyline.addTo(map);
-
     return () => {
-      map.removeLayer(polyline);
+      layers.forEach((layer) => {
+        map.removeLayer(layer);
+      });
     };
-  }, [map, waypoints, color]);
+  }, [map, aircraft, selectedId]);
 
   return null;
 }
@@ -130,15 +174,23 @@ function MapClickHandler({ onSelect }: { onSelect: (id: string | null) => void }
 export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
   const [mounted, setMounted] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
   const hasPositions = useMemo(
     () => aircraft.some((ac) => ac.location && ac.location.lat != null && ac.location.lon != null),
+    [aircraft]
+  );
+
+  const hasRoutes = useMemo(
+    () => aircraft.some((ac) => ac.flightPlanWaypoints.length >= 2),
     [aircraft]
   );
 
   const stats = useMemo(() => {
     const total = aircraft.length;
     const withPos = aircraft.filter((ac) => ac.location && ac.location.lat != null && ac.location.lon != null).length;
-    return { total, withPos, withoutPos: total - withPos };
+    const inFlight = aircraft.filter((ac) => ac.aircraftState === "In Flight").length;
+    const onGround = aircraft.filter((ac) => ac.aircraftState === "On Ground").length;
+    return { total, withPos, withoutPos: total - withPos, inFlight, onGround };
   }, [aircraft]);
 
   useEffect(() => {
@@ -153,7 +205,7 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
     );
   }
 
-  if (!hasPositions) {
+  if (!hasPositions && !hasRoutes) {
     return (
       <div className="flex h-[400px] w-full flex-col items-center justify-center rounded-2xl border border-navy-700/60 bg-navy-800/40">
         <Plane className="h-10 w-10 text-navy-500" />
@@ -166,7 +218,7 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
   }
 
   const handleMarkerClick = (id: string) => {
-    setSelectedId(id);
+    setSelectedId((prev) => (prev === id ? null : id));
   };
 
   const handleMapClick = () => {
@@ -178,37 +230,76 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
   return (
     <div>
       <div className="mb-3 flex flex-col gap-1 rounded-xl border border-navy-700/60 bg-navy-800/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-xs text-slate-300">
-          <span className="font-semibold text-white">{stats.total} Total Aircraft</span>
-          <span className="mx-2 text-navy-600">·</span>
-          <span className="text-emerald-400">{stats.withPos} With Live Position</span>
-          <span className="mx-2 text-navy-600">·</span>
-          <span className="text-slate-500">{stats.withoutPos} Without Live Position</span>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
+          <span className="font-semibold text-white">{stats.total} Total</span>
+          <span className="text-navy-600">·</span>
+          <span className="text-emerald-400">{stats.inFlight} In Flight</span>
+          <span className="text-navy-600">·</span>
+          <span className="text-primary-400">{stats.onGround} On Ground</span>
+          <span className="text-navy-600">·</span>
+          <span className="text-slate-500">{stats.withoutPos} No Position</span>
         </div>
         <p className="text-xs text-slate-500">
-          Only aircraft with valid coordinates from Infinite Flight are displayed on the map.
+          Click an aircraft to view flight plan
         </p>
       </div>
+
       <div className="h-[350px] w-full overflow-hidden rounded-2xl border border-navy-700/60 sm:h-[450px] md:h-[500px]">
         <style jsx global>{`
-          .leaflet-tile {
-            filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
-          }
           .leaflet-container {
             background: #0f172a;
+            font-family: inherit;
           }
           .fleet-map-popup .leaflet-popup-content-wrapper {
-            background: #0f172a;
+            background: rgba(15, 23, 42, 0.95);
             color: #e2e8f0;
             border: 1px solid #334155;
-            border-radius: 8px;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(12px);
           }
           .fleet-map-popup .leaflet-popup-tip {
-            background: #0f172a;
+            background: rgba(15, 23, 42, 0.95);
             border: 1px solid #334155;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
           }
           .fleet-map-popup .leaflet-popup-close-button {
             color: #94a3b8;
+            font-size: 18px;
+            padding: 6px 8px;
+          }
+          .fleet-map-popup .leaflet-popup-close-button:hover {
+            color: #e2e8f0;
+          }
+          .fleet-map-popup .leaflet-popup-content {
+            margin: 12px 16px;
+            line-height: 1.5;
+          }
+          .selected-marker {
+            filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.6));
+            z-index: 1000 !important;
+          }
+          .leaflet-control-zoom {
+            border: 1px solid #334155 !important;
+            border-radius: 8px !important;
+            overflow: hidden;
+          }
+          .leaflet-control-zoom a {
+            background: #0f172a !important;
+            color: #e2e8f0 !important;
+            border-bottom: 1px solid #334155 !important;
+          }
+          .leaflet-control-zoom a:hover {
+            background: #1e293b !important;
+            color: #60a5fa !important;
+          }
+          .leaflet-control-attribution {
+            background: rgba(15, 23, 42, 0.8) !important;
+            color: #64748b !important;
+            font-size: 10px;
+          }
+          .leaflet-control-attribution a {
+            color: #94a3b8 !important;
           }
         `}</style>
         <MapContainer
@@ -216,32 +307,25 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
           zoom={6}
           className="h-full w-full"
           zoomControl={true}
-          attributionControl={false}
+          attributionControl={true}
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             subdomains={["a", "b", "c"]}
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            maxZoom={19}
           />
           <FitBounds aircraft={aircraft} />
+          <FlightPlanLines aircraft={aircraft} selectedId={selectedId} />
           <CenterButton aircraft={aircraft} onSelect={handleMapClick} />
           <MapClickHandler onSelect={handleMapClick} />
-          {selectedAircraft && selectedAircraft.flightPlanWaypoints.length >= 2 && (
-            <FlightPlanLine
-              waypoints={selectedAircraft.flightPlanWaypoints}
-              color={statusColors[selectedAircraft.aircraftState] || "#3B82F6"}
-            />
-          )}
           {aircraft
             .filter((ac): ac is FleetAircraft & { location: { lat: number; lon: number } } => !!ac.location && ac.location.lat != null && ac.location.lon != null)
             .map((ac) => {
               const color = statusColors[ac.aircraftState] || "#3B82F6";
-              const customIcon = new L.Icon({
-                iconUrl: `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color.replace('#', '%23')}" stroke="white" stroke-width="1.5"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.9.5 1.4.3l.5-.2c.4-.3.6-.8.4-1.3z"/></svg>`)}`,
-                iconSize: [28, 28],
-                iconAnchor: [14, 14],
-                popupAnchor: [0, -14],
-              });
+              const isSelected = ac.id === selectedId;
+              const customIcon = createPlaneIcon(color, isSelected);
+
               return (
                 <Marker
                   key={ac.id}
@@ -250,40 +334,74 @@ export default function FleetMap({ aircraft }: { aircraft: FleetAircraft[] }) {
                   eventHandlers={{
                     click: () => handleMarkerClick(ac.id),
                   }}
+                  zIndexOffset={isSelected ? 1000 : 0}
                 >
-                  <Popup>
-                    <div className="max-w-[260px] rounded-lg bg-navy-900 p-3 text-slate-200">
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <span className="text-sm font-bold text-white">{ac.registration}</span>
-                        <span className="text-xs text-slate-400">{ac.callsign}</span>
+                  <Popup className="fleet-map-popup" maxWidth={320}>
+                    <div className="min-w-[240px]">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="h-2.5 w-2.5 rounded-full"
+                            style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
+                          />
+                          <span className="text-sm font-bold text-white">{ac.registration}</span>
+                        </div>
+                        {ac.callsign && (
+                          <span className="text-xs text-slate-400">{ac.callsign}</span>
+                        )}
                       </div>
-                      <p className="mb-2 text-xs text-slate-300">{ac.aircraftType}</p>
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
+
+                      <p className="mb-3 text-xs text-slate-300">{ac.aircraftType}</p>
+
+                      <div className="space-y-2 text-xs">
+                        <div className="flex items-center justify-between rounded-lg bg-navy-800/60 px-2.5 py-1.5">
                           <span className="text-slate-400">State</span>
-                          <span className="font-medium">{ac.aircraftState}</span>
+                          <span className="font-medium" style={{ color }}>
+                            {ac.aircraftState}
+                          </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Fleet</span>
-                          <span className="font-medium">{ac.fleetStatus}</span>
+
+                        <div className="flex items-center justify-between rounded-lg bg-navy-800/60 px-2.5 py-1.5">
+                          <span className="text-slate-400">Fleet Status</span>
+                          <span className={`font-medium ${ac.fleetStatus === "Active" ? "text-emerald-400" : "text-slate-400"}`}>
+                            {ac.fleetStatus}
+                          </span>
                         </div>
+
                         {ac.currentPilot && (
-                          <div className="flex justify-between">
+                          <div className="flex items-center justify-between rounded-lg bg-navy-800/60 px-2.5 py-1.5">
                             <span className="text-slate-400">Pilot</span>
-                            <span className="font-medium">{ac.currentPilot}</span>
+                            <span className="font-medium text-primary-300">{ac.currentPilot}</span>
                           </div>
                         )}
-                        {ac.flightPlan && (ac.flightPlan.from || ac.flightPlan.to) && (
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Flight Plan</span>
-                            <span className="font-medium">
-                              {ac.flightPlan.from || "???"} → {ac.flightPlan.to || "???"}
+
+                        {(ac.altitude != null || ac.groundSpeed != null) && (
+                          <div className="flex items-center gap-2 rounded-lg bg-navy-800/60 px-2.5 py-1.5">
+                            <Navigation className="h-3 w-3 text-slate-500" />
+                            <span className="text-slate-400">
+                              {ac.altitude != null && `${ac.altitude.toLocaleString()} ft`}
+                              {ac.altitude != null && ac.groundSpeed != null && " · "}
+                              {ac.groundSpeed != null && `${ac.groundSpeed} kts`}
                             </span>
                           </div>
                         )}
+
+                        {ac.flightPlan && (ac.flightPlan.from || ac.flightPlan.to) && (
+                          <div className="flex items-center justify-between rounded-lg bg-navy-800/60 px-2.5 py-1.5">
+                            <span className="text-slate-400">Route</span>
+                            <span className="font-medium text-slate-200">
+                              {ac.flightPlan.from || "???"} <span className="text-slate-500">→</span> {ac.flightPlan.to || "???"}
+                            </span>
+                          </div>
+                        )}
+
                         {ac.lastUpdate && (
-                          <div className="pt-1 text-slate-500">
-                            Updated: {new Date(ac.lastUpdate).toLocaleTimeString()}
+                          <div className="pt-1 text-right text-slate-500">
+                            {new Date(ac.lastUpdate).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                            })}
                           </div>
                         )}
                       </div>

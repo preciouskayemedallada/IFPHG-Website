@@ -5,12 +5,12 @@ function base64url(input: Buffer) {
   return input.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const codeVerifier = base64url(randomBytes(32));
   const codeChallenge = base64url(createHash("sha256").update(codeVerifier).digest());
 
   const clientId = process.env.IF_OAUTH_CLIENT_ID;
-  const redirectUri = `${process.env.NEXTAUTH_URL}/api/auth/ifc-callback`;
+  const redirectUri = `${process.env.NEXTAUTH_URL}/api/auth/callback`;
   const scope =
     "openid profile offline_access live:organizations.read live:aircraft.read live:schedules.read";
 
@@ -25,7 +25,11 @@ export async function GET() {
   url.searchParams.set("code_challenge", codeChallenge);
   url.searchParams.set("code_challenge_method", "S256");
 
-  const response = NextResponse.redirect(url);
+  const accept = request.headers.get("accept") || "";
+  const wantsJson = accept.includes("application/json");
+  const response = wantsJson
+    ? NextResponse.json({ authorizeUrl: url.toString() })
+    : NextResponse.redirect(url);
   response.cookies.set("ifc_oauth_state", state, {
     httpOnly: true,
     secure: true,

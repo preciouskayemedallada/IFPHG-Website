@@ -10,42 +10,48 @@ export interface AircraftCardProps {
   fleetStatus?: string;
 }
 
-const statusConfig: Record<string, { bg: string; text: string; ring: string; dot: string }> = {
+const statusConfig: Record<string, { bg: string; text: string; ring: string; dot: string; glow: string }> = {
   "In Flight": {
     bg: "bg-emerald-500/10",
     text: "text-emerald-400",
     ring: "ring-emerald-500/20",
     dot: "bg-emerald-400",
+    glow: "shadow-emerald-500/10",
   },
   "On Ground": {
     bg: "bg-primary-500/10",
     text: "text-primary-400",
     ring: "ring-primary-500/20",
     dot: "bg-primary-400",
+    glow: "shadow-primary-500/10",
   },
   Stopped: {
     bg: "bg-purple-500/10",
     text: "text-purple-400",
     ring: "ring-purple-500/20",
     dot: "bg-purple-400",
+    glow: "shadow-purple-500/10",
   },
   "Virtual Hangar": {
     bg: "bg-navy-500/10",
     text: "text-navy-300",
     ring: "ring-navy-500/20",
     dot: "bg-navy-400",
+    glow: "shadow-navy-500/10",
   },
   Maintenance: {
     bg: "bg-orange-500/10",
     text: "text-orange-400",
     ring: "ring-orange-500/20",
     dot: "bg-orange-400",
+    glow: "shadow-orange-500/10",
   },
   Available: {
     bg: "bg-emerald-500/10",
     text: "text-emerald-400",
     ring: "ring-emerald-500/20",
     dot: "bg-emerald-400",
+    glow: "shadow-emerald-500/10",
   },
 };
 
@@ -64,8 +70,11 @@ export default function AircraftCard({
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-navy-600/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
       <div className="relative flex h-40 w-full items-center justify-center bg-navy-700/30">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-navy-700/60 ring-1 ring-navy-600/60 transition-all duration-300 group-hover:scale-110 group-hover:bg-navy-700/80">
-          <Plane className="h-7 w-7 text-navy-400" />
+        <div className="absolute inset-0 bg-gradient-to-b from-navy-700/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div
+          className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-navy-700/60 ring-1 ring-navy-600/60 transition-all duration-300 group-hover:scale-110 group-hover:bg-navy-700/80 ${config.glow}`}
+        >
+          <Plane className={`h-7 w-7 ${config.text}`} />
         </div>
       </div>
 
