@@ -120,7 +120,6 @@ function FlightPlanLines({
       color: statusColors[selected.aircraftState] || "#3B82F6",
       weight: 4,
       opacity: 0.9,
-      dashArray: "10, 8",
       lineCap: "round",
       lineJoin: "round",
       interactive: false,
